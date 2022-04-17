@@ -1,0 +1,37 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="WindowSystem">
+      <UniqueIdentifier>{94d90c64-62ae-42bb-b8ae-728955277bbf}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="RenderBackedn">
+      <UniqueIdentifier>{7fb59a3e-1b57-41fd-bf2c-312bf2ac5106}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="RenderBackedn\Vulkan">
+      <UniqueIdentifier>{edcaecaf-c6d5-4a61-a860-16482f2f486f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="RenderBackedn\RenderAPIBase">
+      <UniqueIdentifier>{af5d53b5-a867-4ea6-8512-80c088971ab5}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="WindowSystem\WindowSystem.ixx">
+      <Filter>WindowSystem</Filter>
+    </ClCompile>
+    <ClCompile Include="WindowSystem\WindowSystem_Win32.cpp">
+      <Filter>WindowSystem</Filter>
+    </ClCompile>
+    <ClCompile Include="WindowSystem\WindowSystem_Win32.ixx">
+      <Filter>WindowSystem</Filter>
+    </ClCompile>
+    <ClCompile Include="WindowSystem\WindowSystem_Xlib.ixx">
+      <Filter>WindowSystem</Filter>
+    </ClCompile>
+    <ClCompile Include="TinyVkRenderer.ixx">
+      <Filter>RenderBackedn</Filter>
+    </ClCompile>
+    <ClCompile Include="WindowSystem_SurfaceBase.ixx">
+      <Filter>WindowSystem</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>
