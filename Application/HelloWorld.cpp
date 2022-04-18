@@ -3,6 +3,6 @@ import TinyVkRenderer;
 int main()
 {
 	TinyVkRenderer renderer;
-	renderer.Test();
+	renderer.Run();
 	return 0;
 }

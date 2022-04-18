@@ -151,8 +151,9 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="TinyVkRenderer.cpp" />
     <ClCompile Include="TinyVkRenderer.ixx" />
-    <ClCompile Include="WindowSystem_SurfaceBase.ixx" />
+    <ClCompile Include="WindowSystem\WindowSystem_WindowBase.ixx" />
     <ClCompile Include="WindowSystem\WindowSystem.ixx" />
     <ClCompile Include="WindowSystem\WindowSystem_Win32.cpp" />
     <ClCompile Include="WindowSystem\WindowSystem_Win32.ixx" />

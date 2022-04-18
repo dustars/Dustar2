@@ -30,8 +30,9 @@
     <ClCompile Include="TinyVkRenderer.ixx">
       <Filter>RenderBackedn</Filter>
     </ClCompile>
-    <ClCompile Include="WindowSystem_SurfaceBase.ixx">
+    <ClCompile Include="WindowSystem\WindowSystem_WindowBase.ixx">
       <Filter>WindowSystem</Filter>
     </ClCompile>
+    <ClCompile Include="TinyVkRenderer.cpp" />
   </ItemGroup>
 </Project>
