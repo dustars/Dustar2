@@ -1,3 +1,6 @@
-Toy Renderer serves as a playground to indulge my cravings of creating beautiful(?) scenes.
+# Dustar2 Renderer
 
-Now the folders have been created. Just wait for the codes to be written.
+一个用来学习现代图形API（Vulkan/DX12/Metal），并实践一些游戏引擎编程想法的渲染器，最终目标是渲染出一些好看的景，可能需要很多年才能做到这一点。总之，万丈高楼平地起……
+
+#### 当前进行：
+在Vulkan下渲染出三角形。
