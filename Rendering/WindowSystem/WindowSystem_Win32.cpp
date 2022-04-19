@@ -12,21 +12,27 @@
     2022.4.18
 
     Notes:
+    记住windows.h的实现（至少部分？）是user32.lib，在需要链接的Project Properties里面一定要把Linker的
+    Addtional Dependencies设置好（默认的Inherit就有了，但是我之前自己给修改没了）
+
+    TODO:
+    1. I/O
+    2. Window Proc processes more message types
 */
 
 module;
 
 #include <stdexcept>
-#include <strsafe.h>
 
 module WindowSystem:Win32;
 
+import Core;
 import <Windows.h>;
 
 namespace Window
 {
 
-Win32Window::Win32Window()
+Win32Window::Win32Window(uint width, uint height)
 {
     constexpr wchar_t CLASS_NAME[]  = L"Window Class";
 
@@ -44,21 +50,27 @@ Win32Window::Win32Window()
         return;
     }
 
+    // Note: These two functions return the *Primary Display* resolution (in pixels)
+    int centerX = GetSystemMetrics(SM_CXSCREEN)/2;
+    int centerY = GetSystemMetrics(SM_CYSCREEN)/2;
+
     // This is where the window is actually created and returned by OS as a handle
 	window = CreateWindowEx(
         0,                              // Optional window styles.
         CLASS_NAME,                     // Window class
-        L"VulkanWindow",                // Window text
-        WS_OVERLAPPEDWINDOW|WS_POPUP|WS_VISIBLE|WS_SYSMENU|WS_MAXIMIZEBOX|WS_MINIMIZEBOX,            // Window style
+        L"Vulkan Learning",                // Window text
+        WS_OVERLAPPEDWINDOW|WS_VISIBLE,            // Window style
 
-        // Size and position
-        CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
+        centerX - width/2, centerY - height/2,      //Window position
+        (int)width, (int)height,                    //Window size
 
         NULL,       // Parent window    
         NULL,       // Menu
         instance,   // Instance handle
         NULL        // Additional application data
     );
+
+    if(!window) throw std::runtime_error("Cannot Create Window");
 
     // The Following code is very useful to show error message when something goes horii
     //LPVOID lpMsgBuf;
@@ -85,9 +97,7 @@ Win32Window::Win32Window()
 
     //LocalFree(lpMsgBuf);
     //LocalFree(lpDisplayBuf);
-    //ExitProcess(dw); 
-
-    if(!window) throw std::runtime_error("Cannot Create Window");
+    //ExitProcess(dw);
 }
 
 bool Win32Window::Update() const

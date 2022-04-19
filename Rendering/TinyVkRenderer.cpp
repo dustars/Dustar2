@@ -18,8 +18,10 @@ module;
 
 module TinyVkRenderer;
 
-TinyVkRenderer::TinyVkRenderer()
-    : surface()
+import Core;
+
+TinyVkRenderer::TinyVkRenderer(uint windowWidth, uint windowHeight)
+    : surface(windowWidth, windowHeight)
 {
 }
 

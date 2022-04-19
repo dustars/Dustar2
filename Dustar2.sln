@@ -11,6 +11,9 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Rules", "Rules\Rules.vcxproj", "{5EA07A9F-37E4-4350-80C3-9F46F133D53E}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Rendering", "Rendering\Rendering.vcxproj", "{D0B0FA8F-D0E1-435D-9EE2-169F795A7EFA}"
+	ProjectSection(ProjectDependencies) = postProject
+		{4D057191-E921-477A-8A9B-CE2BF821228D} = {4D057191-E921-477A-8A9B-CE2BF821228D}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "EngineFramework", "EngineFramework\EngineFramework.vcxproj", "{681CCA84-7BBD-43D6-A43B-270FC1EF89BA}"
 EndProject

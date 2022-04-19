@@ -20,6 +20,7 @@ export module TinyVkRenderer;
 
 import WindowSystem;
 import std.core;
+import Core;
 
 //Create Window
 //Create Vulkan Instance
@@ -30,7 +31,7 @@ import std.core;
 export class TinyVkRenderer
 {
 public:
-	TinyVkRenderer();
+	TinyVkRenderer(uint windowWidth, uint windowHeight);
 
     void Run()      const;
 	
