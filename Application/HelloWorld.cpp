@@ -17,7 +17,6 @@
     3.
 */
 
-import Core;
 import TinyVkRenderer;
 
 int main()

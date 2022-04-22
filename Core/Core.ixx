@@ -17,4 +17,4 @@
 
 export module Core;
 
-export import TypeDefines;
+//export import TypeDefines;

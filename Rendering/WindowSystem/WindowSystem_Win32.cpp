@@ -21,18 +21,15 @@
 */
 
 module;
-
 #include <stdexcept>
-
 module WindowSystem:Win32;
 
-import Core;
 import <Windows.h>;
 
 namespace Window
 {
 
-Win32Window::Win32Window(uint width, uint height)
+Win32Window::Win32Window(uint32_t width, uint32_t height)
 {
     constexpr wchar_t CLASS_NAME[]  = L"Window Class";
 
@@ -55,7 +52,7 @@ Win32Window::Win32Window(uint width, uint height)
     int centerY = GetSystemMetrics(SM_CYSCREEN)/2;
 
     // This is where the window is actually created and returned by OS as a handle
-	window = CreateWindowEx(
+	windowHandle = CreateWindowEx(
         0,                              // Optional window styles.
         CLASS_NAME,                     // Window class
         L"Vulkan Learning",                // Window text
@@ -70,34 +67,7 @@ Win32Window::Win32Window(uint width, uint height)
         NULL        // Additional application data
     );
 
-    if(!window) throw std::runtime_error("Cannot Create Window");
-
-    // The Following code is very useful to show error message when something goes horii
-    //LPVOID lpMsgBuf;
-    //LPVOID lpDisplayBuf;
-    //DWORD dw = GetLastError(); 
-
-    //FormatMessage(
-    //    FORMAT_MESSAGE_ALLOCATE_BUFFER | 
-    //    FORMAT_MESSAGE_FROM_SYSTEM |
-    //    FORMAT_MESSAGE_IGNORE_INSERTS,
-    //    NULL,
-    //    dw,
-    //    MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-    //    (LPTSTR) &lpMsgBuf,
-    //    0, NULL );
-
-    //lpDisplayBuf = (LPVOID)LocalAlloc(LMEM_ZEROINIT, 
-    //    (lstrlen((LPCTSTR)lpMsgBuf) + lstrlen((LPCTSTR)"Error") + 40) * sizeof(TCHAR)); 
-    //StringCchPrintf((LPTSTR)lpDisplayBuf, 
-    //    LocalSize(lpDisplayBuf) / sizeof(TCHAR),
-    //    TEXT("%s failed with error %d: %s"), 
-    //    (LPCTSTR)"Error", dw, lpMsgBuf); 
-    //MessageBox(NULL, (LPCTSTR)lpDisplayBuf, TEXT("Error"), MB_OK); 
-
-    //LocalFree(lpMsgBuf);
-    //LocalFree(lpDisplayBuf);
-    //ExitProcess(dw);
+    if(!windowHandle) throw std::runtime_error("Cannot Create Window");
 }
 
 bool Win32Window::Update() const

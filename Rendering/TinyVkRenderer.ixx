@@ -11,7 +11,7 @@
     2022.4.17
 
     Last Updated:
-    2022.4.18
+    2022.4.22
 
     Notes:
 */
@@ -19,8 +19,9 @@
 export module TinyVkRenderer;
 
 import WindowSystem;
-import std.core;
-import Core;
+
+import <vector>;
+import <vulkan\vulkan.h>;
 
 //Create Window
 //Create Vulkan Instance
@@ -31,15 +32,25 @@ import Core;
 export class TinyVkRenderer
 {
 public:
-	TinyVkRenderer(uint windowWidth, uint windowHeight);
+	TinyVkRenderer(uint32_t windowWidth, uint32_t windowHeight);
 
     void Run()      const;
 	
 private:
     void Render()   const;
 
-	void CreateRendererWindow();
+    
 
     Window::Win32Window surface;
-    //VkSurfaceKHR surface;
+
+    //Vulkan Initialization Objects
+    VkInstance vkInstance;
+    void InitVulkanInstance();
+
+    std::vector<VkPhysicalDevice> vkPhysicalDevices;
+    void InitVulkanPhysicalDevices();
+
+    VkDevice vkDevice;
+    void InitVulkanLogicalDevice();
+    
 };
