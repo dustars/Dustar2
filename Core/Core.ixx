@@ -9,9 +9,6 @@
     Created Date:
     2022.4.20
 
-    Last Updated:
-    2022.4.20
-
     Notes:
 */
 
