@@ -33,10 +33,9 @@ public:
 private:
     void Render()   const;
 
-    Window::Win32Window surface;
-    VkSurfaceKHR vkSurface;
+    Window::Win32Window window;
 
-    //Vulkan Initialization Objects
+    // Vulkan Initialization
     VkInstance vkInstance;
     void InitVulkanInstance();
     void EnableInstanceLayers(std::vector<const char*>&);
@@ -44,10 +43,16 @@ private:
 
     std::vector<VkPhysicalDevice> vkPhysicalDevices;
     void InitVulkanPhysicalDevices();
+    VkSurfaceKHR vkSurface; //Surface refers to Vulkan's view of a window
     void InitWindow();
-
+    
     VkDevice vkDevice;
     void InitVulkanLogicalDevice();
     void EnableDeviceLayers(std::vector<const char*>&);
     void EnableDeviceExtensions(std::vector<const char*>&);
+
+    VkSwapchainKHR vkSwapChain; //SwapChain其实是跟窗口系统强关联的Object，内含N张Images，Vulkan会从里面请求一张可用的Image进行渲染，最后再present，可以说swapchain是Vulkan和外部窗口系统的接口了
+    std::vector<VkImage> vkSwapChainImages; //存储在SwapChain中的N张Images
+    void InitSwapChain();
+    uint32_t GetAvailableImage(uint64_t waitTimeNano); //从窗口系统获取一张可用的Image
 };

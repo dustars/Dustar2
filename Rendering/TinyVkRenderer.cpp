@@ -24,29 +24,42 @@ import <vector>;
 
 
 TinyVkRenderer::TinyVkRenderer(uint32_t windowWidth, uint32_t windowHeight)
-    : surface(windowWidth, windowHeight)
+    : window(windowWidth, windowHeight)
 {
     InitVulkanInstance();
     InitVulkanPhysicalDevices();
     InitVulkanLogicalDevice();
+    InitSwapChain();
 }
 
 TinyVkRenderer::~TinyVkRenderer()
 {
+    vkDestroySwapchainKHR(vkDevice, vkSwapChain, nullptr);
     vkDestroyDevice(vkDevice, nullptr);
     vkDestroyInstance(vkInstance, nullptr);
 }
 
 void TinyVkRenderer::Run() const
 {
-    while (surface.Update())
+    while (window.Update())
     {
         Render();
     }
+    vkDeviceWaitIdle(vkDevice);
 }
 
 void TinyVkRenderer::Render() const
 {
+    // TODO: 一点没写的Render
+
+    // GetAvailableImage();
+
+    // 把渲染命令录进cmd
+
+    // 用 Memory Barrier 做 Image Transition，准备presentation
+
+    // VkPresentInfoKHR presentInfo;
+    // vkQueuePresentKHR()
 }
 
 void TinyVkRenderer::InitVulkanInstance()
@@ -182,8 +195,8 @@ void TinyVkRenderer::InitWindow()
     createInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
     createInfo.pNext = nullptr;
     createInfo.flags = 0;
-    createInfo.hinstance = surface.GetInstance();
-    createInfo.hwnd = surface.GetHWDN();
+    createInfo.hinstance = window.GetInstance();
+    createInfo.hwnd = window.GetHWDN();
 
     if (VK_SUCCESS != vkCreateWin32SurfaceKHR(vkInstance, &createInfo, nullptr, &vkSurface))
     {
@@ -217,10 +230,10 @@ void TinyVkRenderer::InitVulkanLogicalDevice()
     createInfo.pQueueCreateInfos = queueCreateInfo.data();
     createInfo.queueCreateInfoCount = 1;
     // TODO: layer和extension的动态加载
-    createInfo.enabledLayerCount = 0;
-    createInfo.ppEnabledLayerNames = nullptr;
-    createInfo.enabledExtensionCount = 0;
-    createInfo.ppEnabledExtensionNames = nullptr;
+    createInfo.enabledLayerCount = enabledDeviceLayers.size();
+    createInfo.ppEnabledLayerNames = enabledDeviceLayers.data();
+    createInfo.enabledExtensionCount = enabledDeviceExtensions.size();
+    createInfo.ppEnabledExtensionNames = enabledDeviceExtensions.data();
     // TODO: 可以把Physical Device创建的feature直接拿来用，！但会增加性能开销！
     // 一个更加自然的实现就是用到什么就enable什么feature，但这个就比较复杂了……
     createInfo.pEnabledFeatures = nullptr;
@@ -246,6 +259,10 @@ void TinyVkRenderer::EnableDeviceLayers(std::vector<const char*>& enabledDeviceL
 
 void TinyVkRenderer::EnableDeviceExtensions(std::vector<const char*>& enabledDeviceExtensions)
 {
+#ifdef WINDOW_APP
+    enabledDeviceExtensions.push_back("VK_KHR_swapchain");
+#endif
+
     uint32_t extensionCount;
     std::vector<VkExtensionProperties> extensions;
 
@@ -255,4 +272,85 @@ void TinyVkRenderer::EnableDeviceExtensions(std::vector<const char*>& enabledDev
         extensions.resize(extensionCount);
         vkEnumerateDeviceExtensionProperties(vkPhysicalDevices[0], nullptr, &extensionCount, extensions.data());
     }
+}
+
+
+void TinyVkRenderer::InitSwapChain()
+{
+    //TODO: 需要从外面传很多配置参数进来……然后还要做各种检查……啊……
+    VkSurfaceCapabilitiesKHR surfaceCap;
+    if (VK_SUCCESS != vkGetPhysicalDeviceSurfaceCapabilitiesKHR(vkPhysicalDevices[0], vkSurface, &surfaceCap))
+    {
+        throw std::runtime_error("Failed to get surface capablitities of physical device");
+    }
+
+    uint32_t supportedFormatCount = 0;
+    vkGetPhysicalDeviceSurfaceFormatsKHR(vkPhysicalDevices[0], vkSurface, &supportedFormatCount, nullptr);
+    std::vector<VkSurfaceFormatKHR> surfaceFormats(supportedFormatCount);
+    vkGetPhysicalDeviceSurfaceFormatsKHR(vkPhysicalDevices[0], vkSurface, &supportedFormatCount, surfaceFormats.data());
+    // CheckFormat(requiredFormat, availableFormat) 总之要选一个可用的format出来
+
+    // 该检查要放在选用queue family并且需要window的时候
+    //VkBool32 supported = VK_FALSE;
+    //if (VK_SUCCESS != vkGetPhysicalDeviceSurfaceSupportKHR(vkPhysicalDevices[0], 0, vkSurface, &supported))
+    //{
+    //    throw std::runtime_error("Something went wrong when checking if queue family supports presesentation to surface");
+    //}
+
+    // Swap Chain算是相当重型了……如下好多参数都决定了整体的基调，需要多加重视
+    VkSwapchainCreateInfoKHR createInfo;
+    createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+    createInfo.pNext = nullptr;
+    createInfo.flags = 0;
+    createInfo.surface = vkSurface;
+    createInfo.minImageCount = 3; //at least 3
+    createInfo.imageFormat = VK_FORMAT_R8G8B8A8_UNORM;
+    createInfo.imageColorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR; // 现在有一大堆 Color Space...
+    createInfo.imageExtent = surfaceCap.currentExtent;
+    createInfo.imageArrayLayers = 1;
+    createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    createInfo.queueFamilyIndexCount = 0;  // ignored if using eclusive mode
+    createInfo.pQueueFamilyIndices = nullptr; // ignored if using eclusive mode
+    createInfo.preTransform = surfaceCap.currentTransform;
+    createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+    createInfo.presentMode = VK_PRESENT_MODE_IMMEDIATE_KHR;
+    createInfo.clipped = VK_TRUE; // Don't render into the invisiable region
+    createInfo.oldSwapchain = vkSwapChain;
+
+    if (VK_SUCCESS != vkCreateSwapchainKHR(vkDevice, &createInfo, nullptr, &vkSwapChain))
+    {
+        throw std::runtime_error("Failed to create Swap Chain");
+    }
+
+    uint32_t swapChainImageCount = 0;
+    vkGetSwapchainImagesKHR(vkDevice, vkSwapChain, &swapChainImageCount, nullptr);
+    vkSwapChainImages.resize(swapChainImageCount);
+    vkGetSwapchainImagesKHR(vkDevice, vkSwapChain, &swapChainImageCount, vkSwapChainImages.data());
+}
+
+uint32_t TinyVkRenderer::GetAvailableImage(uint64_t waitTimeNano)
+{
+    // TODO: 记得给这个参数，后续还要把Semaphore和Fence作为参数传进来
+    // 或许不应该result image Index 不然switch case里面不好return
+    // waitTimeNano = UINT64_MAX;
+    uint32_t imageIndex = 0;
+    VkResult result = vkAcquireNextImageKHR(vkDevice, vkSwapChain, waitTimeNano, VK_NULL_HANDLE, VK_NULL_HANDLE, &imageIndex);
+    switch (result)
+    {
+    case VK_SUCCESS:
+    {
+        return imageIndex;
+    }
+    case VK_NOT_READY:
+    {
+        // do something
+    }break;
+    default:
+    {
+        // do what?
+    }
+    };
+
+    return imageIndex;
 }
