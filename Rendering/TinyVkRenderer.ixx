@@ -28,14 +28,16 @@ public:
     //TinyVkRenderer(const TinyVkRednerer&) = delete; //????
     TinyVkRenderer& operator=(const TinyVkRenderer& other) = delete;
 
-    void Run()      const;
+    void Run();
 	
 private:
-    void Render()   const;
+    void Render();
 
     Window::Win32Window window;
 
-    // Vulkan Initialization
+    /*********************************************************/
+    /*---------------------Initialization--------------------*/
+    /*********************************************************/
     VkInstance vkInstance;
     void InitVulkanInstance();
     void EnableInstanceLayers(std::vector<const char*>&);
@@ -55,4 +57,24 @@ private:
     std::vector<VkImage> vkSwapChainImages; //存储在SwapChain中的N张Images
     void InitSwapChain();
     uint32_t GetAvailableImage(uint64_t waitTimeNano); //从窗口系统获取一张可用的Image
+
+    // Queue and Command Buffers
+    std::vector<VkQueue> vkQueues;
+    uint32_t currentQueueFamilyIndex;
+    VkCommandPool vkCommandPool;
+    // 之后可以每个线程拥有一个cmd，乃至于command Pool
+    VkCommandBuffer cmd;
+    void InitCommandPool();
+    void InitCommandBuffers();
+
+    /*********************************************************/
+    /*-----------------Rendering Operations------------------*/
+    /*********************************************************/
+    void PreRender();
+    void PostRender();
+
+    //TODO: Recycling command buffers
+    void BeginCommandBuffer();
+    void EndCommandBuffer();
+    void SubmitCommandBuffer();
 };

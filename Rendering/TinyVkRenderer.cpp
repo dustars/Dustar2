@@ -10,6 +10,11 @@
 
     Notes:
     日了，Module 和 Macro 似乎并不能很好地混用？那么就得思考Conditonal Compilation如何在Module中使用
+
+    一些未来需要实现的点：
+    1. Transient 资源类型的使用
+    2. 去掉所有hardcoded
+    3. 
 */
 
 #define WINDOW_APP
@@ -30,16 +35,19 @@ TinyVkRenderer::TinyVkRenderer(uint32_t windowWidth, uint32_t windowHeight)
     InitVulkanPhysicalDevices();
     InitVulkanLogicalDevice();
     InitSwapChain();
+    InitCommandPool();
+    InitCommandBuffers();
 }
 
 TinyVkRenderer::~TinyVkRenderer()
 {
+    vkDestroyCommandPool(vkDevice, vkCommandPool, nullptr);
     vkDestroySwapchainKHR(vkDevice, vkSwapChain, nullptr);
     vkDestroyDevice(vkDevice, nullptr);
     vkDestroyInstance(vkInstance, nullptr);
 }
 
-void TinyVkRenderer::Run() const
+void TinyVkRenderer::Run()
 {
     while (window.Update())
     {
@@ -48,7 +56,7 @@ void TinyVkRenderer::Run() const
     vkDeviceWaitIdle(vkDevice);
 }
 
-void TinyVkRenderer::Render() const
+void TinyVkRenderer::Render()
 {
     // TODO: 一点没写的Render
 
@@ -60,6 +68,10 @@ void TinyVkRenderer::Render() const
 
     // VkPresentInfoKHR presentInfo;
     // vkQueuePresentKHR()
+    PreRender();
+
+
+    PostRender();
 }
 
 void TinyVkRenderer::InitVulkanInstance()
@@ -179,8 +191,12 @@ void TinyVkRenderer::InitVulkanPhysicalDevices()
     uint32_t queueFamilyCount;
     vkGetPhysicalDeviceQueueFamilyProperties(vkPhysicalDevices[0], &queueFamilyCount, nullptr);
     
-    std::vector<VkQueueFamilyProperties> queueFamilyProperties;
+    std::vector<VkQueueFamilyProperties> queueFamilyProperties(queueFamilyCount);
     vkGetPhysicalDeviceQueueFamilyProperties(vkPhysicalDevices[0], &queueFamilyCount, queueFamilyProperties.data());
+
+    // Do something to choose the appropriate Queue Family
+    // For now I'll just set it to default 0 which refers to 15: graphics/compute/transfer/sparse bits are enabled.
+    currentQueueFamilyIndex = 0;
     
     // Note that we haven't used any of the info above
     // It's safe to assume there will be a pain in the ass
@@ -207,6 +223,9 @@ void TinyVkRenderer::InitWindow()
 
 void TinyVkRenderer::InitVulkanLogicalDevice()
 {
+    // 太多Hardcoded了……未来慢慢丰富吧
+    // Queue Family Index默认是0
+    // Physical Device默认是0（目前我电脑也只有一个……也就是6900xt）
     std::vector<const char*> enabledDeviceLayers;
     EnableDeviceLayers(enabledDeviceLayers);
 
@@ -217,7 +236,7 @@ void TinyVkRenderer::InitVulkanLogicalDevice()
     queueCreateInfo[0].sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
     queueCreateInfo[0].pNext = nullptr;
     queueCreateInfo[0].flags = 0;
-    queueCreateInfo[0].queueFamilyIndex = 0;
+    queueCreateInfo[0].queueFamilyIndex = currentQueueFamilyIndex;
     queueCreateInfo[0].queueCount = 1;
     float priorities[1] = { 0 };
     queueCreateInfo[0].pQueuePriorities = priorities;
@@ -241,6 +260,13 @@ void TinyVkRenderer::InitVulkanLogicalDevice()
     if (VK_SUCCESS != vkCreateDevice(vkPhysicalDevices[0], &createInfo, nullptr, &vkDevice))
     {
         throw std::runtime_error("Failed to create logical device");
+    }
+
+    vkQueues.resize(1);
+    vkGetDeviceQueue(vkDevice, 0, 0, &vkQueues[0]);
+    if (vkQueues[0] == VK_NULL_HANDLE)
+    {
+        throw std::runtime_error("Failed to get queue");
     }
 }
 
@@ -273,7 +299,6 @@ void TinyVkRenderer::EnableDeviceExtensions(std::vector<const char*>& enabledDev
         vkEnumerateDeviceExtensionProperties(vkPhysicalDevices[0], nullptr, &extensionCount, extensions.data());
     }
 }
-
 
 void TinyVkRenderer::InitSwapChain()
 {
@@ -353,4 +378,85 @@ uint32_t TinyVkRenderer::GetAvailableImage(uint64_t waitTimeNano)
     };
 
     return imageIndex;
+}
+
+void TinyVkRenderer::InitCommandPool()
+{
+    VkCommandPoolCreateInfo createInfo;
+    createInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+    createInfo.pNext = nullptr;
+    createInfo.flags = 0;
+    createInfo.queueFamilyIndex = currentQueueFamilyIndex;
+
+    if (VK_SUCCESS != vkCreateCommandPool(vkDevice, &createInfo, nullptr, &vkCommandPool))
+    {
+        throw std::runtime_error("Failed to create command pool");
+    }
+}
+
+void TinyVkRenderer::InitCommandBuffers()
+{
+    VkCommandBufferAllocateInfo allocInfo;
+    allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    allocInfo.pNext = nullptr;
+    allocInfo.commandPool = vkCommandPool;
+    allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    allocInfo.commandBufferCount = 1;
+
+    if (VK_SUCCESS != vkAllocateCommandBuffers(vkDevice, &allocInfo, &cmd))
+    {
+        throw std::runtime_error("Failed to create command buffer");
+    }
+    // There is no need to explicity free all command buffers
+    // Destroy the Command Pool will also free all cmd buffers as well as associated resources.
+}
+
+void TinyVkRenderer::PreRender()
+{
+}
+
+void TinyVkRenderer::PostRender()
+{
+    vkQueueWaitIdle(vkQueues[0]);
+}
+
+void TinyVkRenderer::BeginCommandBuffer()
+{
+    VkCommandBufferBeginInfo beginInfo;
+    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    beginInfo.pNext = nullptr;
+    beginInfo.flags = 0;
+    beginInfo.pInheritanceInfo = nullptr;
+
+    if (VK_SUCCESS != vkBeginCommandBuffer(cmd, &beginInfo))
+    {
+        throw std::runtime_error("Failed to begin Buffer");
+    }
+}
+
+void TinyVkRenderer::EndCommandBuffer()
+{
+    if (VK_SUCCESS != vkEndCommandBuffer(cmd))
+    {
+        throw std::runtime_error("Failed to end Buffer");
+    }
+}
+
+void TinyVkRenderer::SubmitCommandBuffer()
+{
+    VkSubmitInfo submitInfo;
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submitInfo.pNext = nullptr;
+    submitInfo.waitSemaphoreCount = 0;
+    submitInfo.pWaitSemaphores = nullptr;
+    submitInfo.pWaitDstStageMask = nullptr;
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = &cmd;
+    submitInfo.signalSemaphoreCount = 0;
+    submitInfo.pSignalSemaphores = nullptr;
+
+    if (VK_SUCCESS != vkQueueSubmit(vkQueues[0], 1, &submitInfo, VK_NULL_HANDLE))
+    {
+        throw std::runtime_error("Failed to submit queue");
+    }
 }
