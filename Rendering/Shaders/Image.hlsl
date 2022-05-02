@@ -22,8 +22,8 @@ void main(uint3 id : SV_DispatchThreadID)
 {
 	float4 color = srcImage.SampleLevel(srcSampler, (float2(id.xy) + 0.5) / float2(128, 128), 0);
 
-	dstImage[id.xy] = color;
-	dstImage[id.xy + uint2(0, testA)] = color;
-	dstImage[id.xy + uint2(testB, 0)] = color;
-	dstImage[id.xy + uint2(testC, testC)] = color;
+    dstImage[id.xy * 2 + uint2(0, 0)] = color;
+    dstImage[id.xy * 2 + uint2(0, testA)] = color;
+    dstImage[id.xy * 2 + uint2(testB, 0)] = color;
+    dstImage[id.xy * 2 + uint2(testC, testC)] = color;
 }
