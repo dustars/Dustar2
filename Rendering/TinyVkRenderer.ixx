@@ -16,6 +16,7 @@
 export module TinyVkRenderer;
 
 import WindowSystem;
+import <string>;
 import <vector>;
 import <vulkan\vulkan.h>;
 
@@ -31,6 +32,9 @@ public:
     void Run();
 	
 private:
+    // Resources used by device will be updated by Application (no cmd involved)
+    void Update();
+    // Rendering operations. Recording command buffers and submit to the queue.
     void Render();
 
     Window::Win32Window window;
@@ -77,4 +81,69 @@ private:
     void BeginCommandBuffer();
     void EndCommandBuffer();
     void SubmitCommandBuffer();
+
+    /*********************************************************/
+    /*-----------------------Resources-----------------------*/
+    /*********************************************************/
+    // 用于学习一些资源相关的API，会把用法暂时放在里面，后续会删掉
+    void Temp();
+    void CheckFormatProperties();
+
+    VkDeviceMemory deviceMem;
+    void AllocateMemory(uint32_t memoryType);
+    uint32_t FindMemoryType(const VkMemoryRequirements& memoryRequirements, VkMemoryPropertyFlags requiredFlags, VkMemoryPropertyFlags preferredFlags);  
+
+    VkDescriptorSetLayout descriptorSetLayout;
+    VkDescriptorPool descriptorPool;
+    std::vector<VkDescriptorSet> descriptorSet;
+    void CreateDescriptorSetLayout();
+    void CreateDescriptorPool();
+    void AllocateDescriptorSets();
+    void UpdateDescriptorSets();
+
+    /*********************************************************/
+    /*-------------------------Shader------------------------*/
+    /*********************************************************/
+    // Shader System啊……估计也会非常复杂吧到了后期
+    // TODO: 居然书中多次提到Vulkan本身并不关心Shader Module是如何来的，
+    // 也就是说我要把SPIR-V的Binary Code加载到App里，Byte Size和一个指向
+    // Binary code 的 pointer，麻烦了啊艹
+    VkShaderModule shaderModule;
+    VkPipeline computePipeline;
+    VkPipelineLayout pipelineLayout;
+    VkPipelineCache pipelineCache = VK_NULL_HANDLE;
+    void CreateShaderModule(const std::string& shaderFile);
+    void CreateComputePipeline();
+    void CreatePipelineLayout();
+    void CreatePipelineCache();
+
+private: //data
+    uint64_t memSize;
+
+
+	/*********************************************************/
+	/*-----------------------Playground----------------------*/
+	/*********************************************************/
+    // 将一张图片的颜色反转
+    // 创建Pipeline/Shader/Descriptor Set/Image/Image View/Sampler 反正所有要用到的资源，算是第一次实战
+    // 注意写的是HLSL，要看一下和Vulkan之间的Mapping问题： https://github.com/microsoft/DirectXShaderCompiler/blob/master/docs/SPIR-V.rst
+    void InvertImageInit();
+    void InvertImageResourceClean();
+    void InvertImageRender();
+    void InvertImageUpdate();
+
+    void CreateSrcSampler();
+	void CreateSrcImage(const std::string& filename);
+	void CreateDstImage();
+    void CreateSrcImageView();
+    void CreateDstImageView();
+
+    VkSampler srcSampler;
+    VkImage srcImage;
+    VkDeviceMemory srcMemory;
+    VkImage dstImage;
+    VkDeviceMemory dstMemory;
+
+    VkImageView srcImageView;
+    VkImageView dstImageView;
 };

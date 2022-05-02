@@ -9,7 +9,7 @@
     2022.4.18
 
     Notes:
-    日了，Module 和 Macro 似乎并不能很好地混用？那么就得思考Conditonal Compilation如何在Module中使用
+    日了,Module 和 Macro 似乎并不能很好地混用？那么就得思考Conditonal Compilation如何在Module中使用
 
     一些未来需要实现的点：
     1. Transient 资源类型的使用
@@ -19,14 +19,14 @@
 
 #define WINDOW_APP
 #define VK_USE_PLATFORM_WIN32_KHR
+#define STB_IMAGE_IMPLEMENTATION
 
 module;
+#include <fstream>
 #include <stdexcept>
+#include <Utilities\stb\stb_image.h>
 #include <vulkan\vulkan.h>
 module TinyVkRenderer;
-
-import <vector>;
-
 
 TinyVkRenderer::TinyVkRenderer(uint32_t windowWidth, uint32_t windowHeight)
     : window(windowWidth, windowHeight)
@@ -37,10 +37,14 @@ TinyVkRenderer::TinyVkRenderer(uint32_t windowWidth, uint32_t windowHeight)
     InitSwapChain();
     InitCommandPool();
     InitCommandBuffers();
+
+    //-------//
+    InvertImageInit();
 }
 
 TinyVkRenderer::~TinyVkRenderer()
 {
+    InvertImageResourceClean();
     vkDestroyCommandPool(vkDevice, vkCommandPool, nullptr);
     vkDestroySwapchainKHR(vkDevice, vkSwapChain, nullptr);
     vkDestroyDevice(vkDevice, nullptr);
@@ -51,32 +55,30 @@ void TinyVkRenderer::Run()
 {
     while (window.Update())
     {
+        Update();
         Render();
     }
     vkDeviceWaitIdle(vkDevice);
 }
 
+void TinyVkRenderer::Update()
+{
+}
+
 void TinyVkRenderer::Render()
 {
-    // TODO: 一点没写的Render
-
-    // GetAvailableImage();
-
-    // 把渲染命令录进cmd
-
-    // 用 Memory Barrier 做 Image Transition，准备presentation
-
-    // VkPresentInfoKHR presentInfo;
-    // vkQueuePresentKHR()
     PreRender();
+    BeginCommandBuffer();
 
+    InvertImageRender();
 
+    EndCommandBuffer();
     PostRender();
 }
 
 void TinyVkRenderer::InitVulkanInstance()
 {
-    // 既然可以在创建Instance之前先获取Instance级别的Layer和Extensions，
+    // 既然可以在创建Instance之前先获取Instance级别的Layer和Extensions,
     // 那是否代表着这两种东西是跟硬件无关的？取决于Vulkan在平台上的实现？
     std::vector<const char*> enabledInstanceLayers;
     EnableInstanceLayers(enabledInstanceLayers);
@@ -99,9 +101,9 @@ void TinyVkRenderer::InitVulkanInstance()
     createInfo.pNext = nullptr;
     createInfo.flags = 0;
     createInfo.pApplicationInfo = &appInfo;
-    createInfo.enabledLayerCount = enabledInstanceLayers.size();
+    createInfo.enabledLayerCount = static_cast<uint32_t>(enabledInstanceLayers.size());
     createInfo.ppEnabledLayerNames = enabledInstanceLayers.data();
-    createInfo.enabledExtensionCount = enabledInstanceExtensions.size();
+    createInfo.enabledExtensionCount = static_cast<uint32_t>(enabledInstanceExtensions.size());
     createInfo.ppEnabledExtensionNames = enabledInstanceExtensions.data();
     
     if (VK_SUCCESS != vkCreateInstance(&createInfo, nullptr, &vkInstance))
@@ -127,7 +129,7 @@ void TinyVkRenderer::EnableInstanceLayers(std::vector<const char*>& enabledInsta
         vkEnumerateInstanceLayerProperties(&layerCount, layers.data());
     }
 
-    // TODO：获取到该Platform支持的Layers后，要检查是否覆盖了APP所需
+    // TODO：获取到该Platform支持的Layers后,要检查是否覆盖了APP所需
     // CheckIfRequiredLayersAvailable()
 }
 
@@ -153,7 +155,7 @@ void TinyVkRenderer::EnableInstanceExtensions(std::vector<const char*>& enabledI
         vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, extensions.data());
     }
 
-    // TODO：获取到该Platform支持的Extensions后，要检查是否覆盖了APP所需
+    // TODO：获取到该Platform支持的Extensions后,要检查是否覆盖了APP所需
     // CheckIfRequiredExtentsionAvailable()
 }
 
@@ -249,12 +251,12 @@ void TinyVkRenderer::InitVulkanLogicalDevice()
     createInfo.pQueueCreateInfos = queueCreateInfo.data();
     createInfo.queueCreateInfoCount = 1;
     // TODO: layer和extension的动态加载
-    createInfo.enabledLayerCount = enabledDeviceLayers.size();
+    createInfo.enabledLayerCount = static_cast<uint32_t>(enabledDeviceLayers.size());
     createInfo.ppEnabledLayerNames = enabledDeviceLayers.data();
-    createInfo.enabledExtensionCount = enabledDeviceExtensions.size();
+    createInfo.enabledExtensionCount = static_cast<uint32_t>(enabledDeviceExtensions.size());
     createInfo.ppEnabledExtensionNames = enabledDeviceExtensions.data();
-    // TODO: 可以把Physical Device创建的feature直接拿来用，！但会增加性能开销！
-    // 一个更加自然的实现就是用到什么就enable什么feature，但这个就比较复杂了……
+    // TODO: 可以把Physical Device创建的feature直接拿来用,！但会增加性能开销！
+    // 一个更加自然的实现就是用到什么就enable什么feature,但这个就比较复杂了……
     createInfo.pEnabledFeatures = nullptr;
 
     if (VK_SUCCESS != vkCreateDevice(vkPhysicalDevices[0], &createInfo, nullptr, &vkDevice))
@@ -322,7 +324,7 @@ void TinyVkRenderer::InitSwapChain()
     //    throw std::runtime_error("Something went wrong when checking if queue family supports presesentation to surface");
     //}
 
-    // Swap Chain算是相当重型了……如下好多参数都决定了整体的基调，需要多加重视
+    // Swap Chain算是相当重型了……如下好多参数都决定了整体的基调,需要多加重视
     VkSwapchainCreateInfoKHR createInfo;
     createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
     createInfo.pNext = nullptr;
@@ -356,7 +358,7 @@ void TinyVkRenderer::InitSwapChain()
 
 uint32_t TinyVkRenderer::GetAvailableImage(uint64_t waitTimeNano)
 {
-    // TODO: 记得给这个参数，后续还要把Semaphore和Fence作为参数传进来
+    // TODO: 记得给这个参数,后续还要把Semaphore和Fence作为参数传进来
     // 或许不应该result image Index 不然switch case里面不好return
     // waitTimeNano = UINT64_MAX;
     uint32_t imageIndex = 0;
@@ -385,7 +387,7 @@ void TinyVkRenderer::InitCommandPool()
     VkCommandPoolCreateInfo createInfo;
     createInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
     createInfo.pNext = nullptr;
-    createInfo.flags = 0;
+    createInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
     createInfo.queueFamilyIndex = currentQueueFamilyIndex;
 
     if (VK_SUCCESS != vkCreateCommandPool(vkDevice, &createInfo, nullptr, &vkCommandPool))
@@ -417,6 +419,7 @@ void TinyVkRenderer::PreRender()
 
 void TinyVkRenderer::PostRender()
 {
+    // After this point, all works in command buffers are finished.
     vkQueueWaitIdle(vkQueues[0]);
 }
 
@@ -459,4 +462,604 @@ void TinyVkRenderer::SubmitCommandBuffer()
     {
         throw std::runtime_error("Failed to submit queue");
     }
+}
+
+void TinyVkRenderer::Temp()
+{
+    // Resource State
+    // Vulkan是真的复杂啊……录制cmd,执行就是分开的,大量并行的操作,pipeline stage之间如何的转换……
+    // 所有的这些变化,都是程序员负责完善它们,把一个一个的资源做好同步,避免hazard的出现,唉……
+    // 现在只是学习,还不算复杂,等到真正开始使用了,完全可以预料到一团乱麻的情况,所以Frame Graph的出现就是基于这种需求
+
+    // Barrier的作用：
+    // 1. 为内存访问提供同步机制
+    // 2. 改变Resource State
+    // vkCmdPipelineBarrier()
+    // VkMemoryBarrier globalBarriers;      //粒度最大,在memory层确保所有SrcStage的工作完成,才会到DstStage去
+    // VkBufferMemoryBarrier bufferBarriers;//只针对Buffer,所以粒度很细
+    // VkImageMemoryBarrier imageBarriers;  //只针对Image
+
+    // Buffer 数据操作
+    // vkCmdFillBuffer()  //用某个值初始化Buffer,在丛哥手下做事时遇到的……Offset和Size都是4个bytes为单位（DX12也是）,metal居然只有1个byte,粒度是真的细
+    // vkCmdUpdateBuffer() //用于更新小部分的值  2^16 65536 bytes的上限,适用于Shader会访问的Uniform buffer和shader storage block
+    // vkCmdCopyBuffer() //用于很大一块数据的转移
+
+    // Images 数据操作
+    // vkCmdClearColorImage(); //只接受GENERAL和TRANSFER_DST_OPTIMAL的Layout执行该操作,我人傻了,还得Barrier改变Layout才能用……ASPECT_COLOR_BIT
+    // vkCmdClearDepthStencilImage(); //layout同上,clear value比较特殊,STENCIL & DEPTH BIT
+    // *重点*
+    // vkCmdCopyBufferToImage()
+    // vkCmdCopyImageToBuffer() 
+    // vkCmdCopyImage()
+    // vkCmdBlitImage() // Blit is short for block image transfer and refers to the operation of not only copying image data, but potentially also processing it along the way.
+    // Blit 这个操作非常灵活 图片可以垂直/水平翻转或旋转180°,如果大小不一样,会自动用点/双线性采样Filter,十分牛逼。
+    // *重点*
+}
+
+void TinyVkRenderer::CheckFormatProperties()
+{
+    // Image 有两种 Tiling Mode：Linear 和 Optimal
+    // Linear就是从左上到右下的标准线性数据排列
+    // 下面查的就是各种Format分别对以上两种情况的支持程度
+    // 同时还有对 Formatted Buffer 的支持程度
+    // 该查询方法是比较泛泛的
+    VkFormatProperties properties;
+    vkGetPhysicalDeviceFormatProperties(vkPhysicalDevices[0], /*VkFomrat*/VK_FORMAT_R8G8B8A8_UNORM, &properties);
+
+    // 专门针对Image的Format Properties检查要调用：
+    VkImageFormatProperties imageProperties;
+    vkGetPhysicalDeviceImageFormatProperties(
+        vkPhysicalDevices[0],
+        /*VkFomrat*/VK_FORMAT_R8_UNORM,
+        VK_IMAGE_TYPE_2D,
+        VK_IMAGE_TILING_LINEAR,
+        VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+        0,
+        &imageProperties
+    );
+}
+
+void TinyVkRenderer::AllocateMemory(uint32_t memoryType)
+{
+
+}
+
+uint32_t TinyVkRenderer::FindMemoryType(const VkMemoryRequirements& memoryRequirements, VkMemoryPropertyFlags requiredFlags, VkMemoryPropertyFlags preferredFlags)
+{
+	VkPhysicalDeviceMemoryProperties memoryProperties;
+	vkGetPhysicalDeviceMemoryProperties(vkPhysicalDevices[0], &memoryProperties);
+
+    uint32_t selectedType = ~0u;
+    uint32_t memoryType;
+
+    for (memoryType = 0; memoryType < 32; memoryType++){
+        if (memoryRequirements.memoryTypeBits & (1 << memoryType))
+        {
+            const VkMemoryType& type = memoryProperties.memoryTypes[memoryType];
+
+            if ((type.propertyFlags & preferredFlags) == preferredFlags)
+            {
+                selectedType = memoryType;
+                break;
+            }
+        }
+    }
+
+    if (selectedType != ~0u)
+    {
+        for (memoryType = 0; memoryType < 32; memoryType++)
+        {
+			if (memoryRequirements.memoryTypeBits & (1 << memoryType))
+			{
+                const VkMemoryType& type = memoryProperties.memoryTypes[memoryType];
+
+				if ((type.propertyFlags & requiredFlags) == requiredFlags)
+				{
+					selectedType = memoryType;
+					break;
+				}
+			}
+        }
+    }
+
+    return selectedType;
+}
+
+void TinyVkRenderer::CreateDescriptorSetLayout()
+{
+    std::vector<VkDescriptorSetLayoutBinding> bindings;
+
+    bindings.emplace_back(
+        0,
+        VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+        1,
+        VK_SHADER_STAGE_COMPUTE_BIT,
+        nullptr
+    );
+
+    bindings.emplace_back(
+        1,
+        VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+        1,
+        VK_SHADER_STAGE_COMPUTE_BIT,
+        nullptr
+    );
+
+    VkDescriptorSetLayoutCreateInfo createInfo;
+    createInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    createInfo.pNext = nullptr;
+    createInfo.flags = 0;
+    createInfo.bindingCount = 2;
+    createInfo.pBindings = bindings.data();
+
+	if (VK_SUCCESS != vkCreateDescriptorSetLayout(vkDevice, &createInfo, nullptr, &descriptorSetLayout))
+	{
+		throw std::runtime_error("Failed to create descriptor set layout");
+	}
+}
+
+void TinyVkRenderer::CreateDescriptorPool()
+{
+    std::vector<VkDescriptorPoolSize> poolContent;
+    poolContent.emplace_back(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1);
+	poolContent.emplace_back(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1);
+
+    VkDescriptorPoolCreateInfo createInfo;
+    createInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+    createInfo.pNext = nullptr;
+    createInfo.flags = 0;
+    createInfo.maxSets = 10u;
+    // Only specified descriptor type may be allocated from the pool
+    createInfo.poolSizeCount = poolContent.size();
+    createInfo.pPoolSizes = poolContent.data();
+
+	if (VK_SUCCESS != vkCreateDescriptorPool(vkDevice, &createInfo, nullptr, &descriptorPool))
+	{
+		throw std::runtime_error("Failed to create descriptor pool");
+	}
+}
+
+void TinyVkRenderer::AllocateDescriptorSets()
+{
+    size_t descriptorSetCount = 1;
+
+    VkDescriptorSetAllocateInfo allocInfo;
+    allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+    allocInfo.pNext = nullptr;
+    allocInfo.descriptorPool = descriptorPool;
+    allocInfo.descriptorSetCount = descriptorSetCount;
+    allocInfo.pSetLayouts = &descriptorSetLayout;
+
+    descriptorSet.resize(descriptorSetCount);
+
+	if (VK_SUCCESS != vkAllocateDescriptorSets(vkDevice, &allocInfo, &descriptorSet[0]))
+	{
+		throw std::runtime_error("Failed to create descriptor set");
+	}
+}
+
+void TinyVkRenderer::UpdateDescriptorSets()
+{
+    VkDescriptorImageInfo srcImageInfo = { srcSampler , srcImageView, VK_IMAGE_LAYOUT_GENERAL };
+    std::vector<VkWriteDescriptorSet> writeDescriptors;
+    VkWriteDescriptorSet writeDescriptor;
+    writeDescriptor.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    writeDescriptor.pNext = 0;
+    writeDescriptor.dstSet = descriptorSet[0];
+    writeDescriptor.dstBinding = 0;
+    writeDescriptor.dstArrayElement = 0; // Starting element index in that array
+    writeDescriptor.descriptorCount = 1; // Number of descriptors to update
+    writeDescriptor.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER; // Determine which one of the following *ARRAY* of data will be chosen
+    // Try Union? 
+    writeDescriptor.pImageInfo = &srcImageInfo;
+    writeDescriptors.push_back(std::move(writeDescriptor));
+
+    VkDescriptorImageInfo dstImageInfo = { VK_NULL_HANDLE , dstImageView , VK_IMAGE_LAYOUT_GENERAL}; //没找到存储用什么Layout?
+    writeDescriptors.emplace_back(VkWriteDescriptorSet{
+        VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+        0,
+        descriptorSet[0],
+        1,
+        0,
+        1,
+        VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+        &dstImageInfo
+    });
+
+    //VkDescriptorImageInfo imageInfo = { sampler, ImageView, ImageLayout };
+    // Uniform buffer has some extra limits, check device properties.
+    //VkDescriptorBufferInfo bufferInfo = { buffer, offset, range(or size?)};
+
+    //VkCopyDescriptorSet copyDescriptor;
+    //copyDescriptor.sType = VK_STRUCTURE_TYPE_COPY_DESCRIPTOR_SET;
+    //copyDescriptor.pNext = nullptr;
+    //// srcSet and dstSet can be the same, as long as the copied descriptor don't overlap
+    //copyDescriptor.srcSet = ? ;
+    //copyDescriptor.srcBinding = ? ;
+    //copyDescriptor.srcArrayElement = ? ;
+    //copyDescriptor.dstSet = ? ;
+    //copyDescriptor.dstBinding = ? ;
+    //copyDescriptor.dstArrayElement = ? ;
+    //copyDescriptor.descriptorCount = ? ; // Number of descriptors to update
+        
+    // Remember the synchronization! Device CANNOT access the referenced descriptor sets at this point
+    // 思考：更新的最佳时机在什么时候？反正不可能是cmd正在执行的途中
+    vkUpdateDescriptorSets(vkDevice, writeDescriptors.size(), writeDescriptors.data(), 0, nullptr);
+    // Update之后,即可调用 vkCmdBindDescriptorSets()
+}
+
+void TinyVkRenderer::CreateShaderModule(const std::string& shaderFile)
+{
+	std::ifstream file(shaderFile, std::ios::ate | std::ios::binary);
+
+	if (!file.is_open()) {
+		throw std::runtime_error("failed to open file!");
+	}
+
+	size_t codeSize = (size_t)file.tellg();
+	std::vector<char> code(codeSize);
+
+	file.seekg(0);
+	file.read(code.data(), codeSize);
+	file.close();
+
+    VkShaderModuleCreateInfo createInfo =
+    {
+        VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
+        nullptr,
+        0,
+        codeSize,
+        reinterpret_cast<const uint32_t*>(code.data())
+    };
+
+    if (VK_SUCCESS != vkCreateShaderModule(vkDevice, &createInfo ,nullptr ,&shaderModule))
+    {
+        throw std::runtime_error("Failed to create shader module");
+    }
+}
+
+void TinyVkRenderer::CreateComputePipeline()
+{
+    // Test Specialization Constant...
+    std::vector<uint32_t> localWorkGroup = { 1, 1, 1 };
+
+    std::vector<VkSpecializationMapEntry> entries;
+    for (size_t i = 0; i < localWorkGroup.size(); i++)
+    {
+        entries.emplace_back(i, i * sizeof(uint32_t), sizeof(uint32_t));
+    }
+
+    VkSpecializationInfo specInfo;
+    specInfo.mapEntryCount = localWorkGroup.size();
+    specInfo.pMapEntries = entries.data();
+    specInfo.dataSize = sizeof(uint32_t) * localWorkGroup.size();
+    specInfo.pData = localWorkGroup.data();
+    // Test Specialization Constant...
+
+    // Shader Module
+    VkPipelineShaderStageCreateInfo stageCreateInfo;
+    stageCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    stageCreateInfo.pNext = nullptr;
+    stageCreateInfo.flags = 0;
+    stageCreateInfo.stage = VK_SHADER_STAGE_COMPUTE_BIT;
+    stageCreateInfo.module = shaderModule;
+    stageCreateInfo.pName = "main";
+    stageCreateInfo.pSpecializationInfo = &specInfo;
+
+    VkComputePipelineCreateInfo createInfo;
+    createInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
+    createInfo.pNext = nullptr;
+    createInfo.flags = 0;
+    createInfo.stage = stageCreateInfo;
+    createInfo.layout = pipelineLayout;
+    // Pipeline Derivatives...啥玩意儿？？
+    createInfo.basePipelineHandle = VK_NULL_HANDLE;
+    createInfo.basePipelineIndex = -1;
+    
+    //pipelineCache 的作用仅仅只是加速Pipeline的创建过程吗？不能省下一些诸如CreateInfo的创建？
+    if (VK_SUCCESS != vkCreateComputePipelines(vkDevice, VK_NULL_HANDLE, 1, &createInfo, nullptr, &computePipeline))
+    {
+        throw std::runtime_error("Failed to create compute pipeline");
+    }
+}
+
+void TinyVkRenderer::CreatePipelineLayout()
+{
+    VkPipelineLayoutCreateInfo createInfo;
+    createInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+    createInfo.pNext = nullptr;
+    createInfo.flags = 0;
+    createInfo.setLayoutCount = 1;
+    createInfo.pSetLayouts = &descriptorSetLayout;
+    createInfo.pushConstantRangeCount = 0;
+    createInfo.pPushConstantRanges = nullptr;
+
+	if (VK_SUCCESS != vkCreatePipelineLayout(vkDevice, &createInfo, nullptr, &pipelineLayout))
+	{
+		throw std::runtime_error("Failed to create pipeline layout");
+	}
+}
+
+void TinyVkRenderer::CreatePipelineCache()
+{
+    // 可以试一下创建Pipeline时用上Cache,看是否会有加速？
+    VkPipelineCacheCreateInfo createInfo;
+    createInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;
+    createInfo.pNext = nullptr;
+    createInfo.flags = 0;
+    createInfo.initialDataSize = 0;
+    createInfo.pInitialData = nullptr;
+
+	if (VK_SUCCESS != vkCreatePipelineCache(vkDevice, &createInfo, nullptr, &pipelineCache))
+	{
+		throw std::runtime_error("Failed to create pipeline cache");
+	}
+}
+
+void TinyVkRenderer::InvertImageInit()
+{
+    CreateSrcSampler();
+    CreateSrcImage("../Resources/worley.jpg");
+    CreateDstImage();
+
+    CreateSrcImageView();
+    CreateDstImageView();
+
+    // Create Shader
+    CreateShaderModule("../Rendering/Shaders/Image.spv");
+    // Create Descriptor Set Layout
+    CreateDescriptorSetLayout();
+	// Create Pipeline Layout
+	CreatePipelineLayout();
+    // Create Pipeline
+	CreateComputePipeline();
+    // Create Descriptor Pool
+    CreateDescriptorPool();
+    // Allocate Descriptor Set
+    AllocateDescriptorSets();
+    // Bind Resources to Descriptor Set
+    UpdateDescriptorSets();
+}
+
+void TinyVkRenderer::InvertImageResourceClean()
+{
+	vkDestroyDescriptorPool(vkDevice, descriptorPool, nullptr);
+	vkDestroyPipeline(vkDevice, computePipeline, nullptr);
+	vkDestroyPipelineLayout(vkDevice, pipelineLayout, nullptr);
+	vkDestroyDescriptorSetLayout(vkDevice, descriptorSetLayout, nullptr);
+    vkDestroyShaderModule(vkDevice, shaderModule, nullptr);
+    
+	vkDestroyImageView(vkDevice, dstImageView, nullptr);
+	vkDestroyImageView(vkDevice, srcImageView, nullptr);
+
+	vkDestroyImage(vkDevice, dstImage, nullptr);
+	vkDestroyImage(vkDevice, srcImage, nullptr);
+
+	vkFreeMemory(vkDevice, dstMemory, nullptr);
+	vkFreeMemory(vkDevice, srcMemory, nullptr);
+
+    vkDestroySampler(vkDevice, srcSampler, nullptr);
+}
+
+void TinyVkRenderer::InvertImageRender()
+{
+    // Layout:???
+
+	// 计算管线和图形管线的Binding可能需要解耦,是一个相当复杂的过程啊唉……
+    // 妈的 光追混合渲染管线咋弄？？？
+    // Bind pipeline and command buffer
+	vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, computePipeline);
+	vkCmdBindDescriptorSets(
+		cmd, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout,
+		0, descriptorSet.size(), descriptorSet.data(), // Descriptor
+		0, nullptr); // Dynamic uniform or shader storage bindings offset.
+	// TODO 找机会试一下Indirect Dispatch
+	vkCmdDispatch(cmd, 16, 16, 1);
+}
+
+void TinyVkRenderer::InvertImageUpdate()
+{
+	// Update Image Resource
+	UpdateDescriptorSets();
+}
+
+void TinyVkRenderer::CreateSrcSampler()
+{
+    VkSamplerCreateInfo createInfo;
+    createInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+    createInfo.pNext = nullptr;
+    createInfo.flags = 0;
+    createInfo.magFilter = VK_FILTER_LINEAR;
+    createInfo.minFilter = VK_FILTER_LINEAR;
+    createInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+    createInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    createInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    createInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    createInfo.mipLodBias = 0;
+    createInfo.anisotropyEnable = VK_FALSE;
+    //createInfo.maxAnisotropy = ;
+    createInfo.compareEnable = VK_FALSE;
+    //createInfo.compareOp = ;
+    createInfo.minLod = 0;
+    createInfo.maxLod = 1;
+    createInfo.borderColor = VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK;
+    createInfo.unnormalizedCoordinates = VK_FALSE;
+
+	if (VK_SUCCESS != vkCreateSampler(vkDevice, &createInfo, nullptr, &srcSampler))
+	{
+		throw std::runtime_error("Failed to create src sampler");
+	}
+}
+
+void TinyVkRenderer::CreateSrcImage(const std::string& filename)
+{
+	// Load image
+	int width, height, channels;
+	unsigned char* data = stbi_load(filename.data(), &width, &height, &channels, STBI_rgb_alpha);
+	// 试一下用一个Memory Object放两张图片，下面size可以用来作为第二张图的offset
+	// VkDeviceSize imageSize = static_cast<VkDeviceSize>(width * height * 3); // 24 bit
+
+	// Create Image Object
+	VkImageCreateInfo createInfo;
+	createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+	createInfo.pNext = nullptr;
+	createInfo.flags = 0;
+	createInfo.imageType = VK_IMAGE_TYPE_2D;
+	createInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
+	createInfo.extent = { uint32_t(width), uint32_t(height), 1 };
+	createInfo.arrayLayers = 1;
+	createInfo.mipLevels = 1;
+	createInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+	createInfo.tiling = VK_IMAGE_TILING_LINEAR; // 如果CPU要改动这个Image,那就设置成Linear,不然就用Optimal
+	createInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+	createInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+	createInfo.queueFamilyIndexCount = 0;
+	createInfo.pQueueFamilyIndices = nullptr;
+	createInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+	if (VK_SUCCESS != vkCreateImage(vkDevice, &createInfo, nullptr, &srcImage))
+	{
+		throw std::runtime_error("Failed to create src Image");
+	}
+
+	// Check Requirement
+	VkMemoryRequirements memoryRequirements;
+	vkGetImageMemoryRequirements(vkDevice, srcImage, &memoryRequirements);
+
+	// Find Suitable Memory Type
+	uint32_t memoryIndex = FindMemoryType(
+		memoryRequirements,
+		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
+	);
+
+	// Allocate Memory
+	VkMemoryAllocateInfo allocInfo;
+	allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+	allocInfo.pNext = nullptr;
+	allocInfo.allocationSize = 1024 * 1024 * sizeof(float);
+	allocInfo.memoryTypeIndex = memoryIndex;
+
+	if (VK_SUCCESS != vkAllocateMemory(vkDevice, &allocInfo, nullptr, &srcMemory))
+	{
+		throw std::runtime_error("Failed to create device memory");
+	}
+
+	{ // Feed Image data into memory
+		void* mappedData;
+		if (VK_SUCCESS != vkMapMemory(vkDevice, srcMemory, 0, VK_WHOLE_SIZE, 0, &mappedData))
+		{
+			throw std::runtime_error("Failed to Map Memory");
+		}
+
+		// Flush the memory so the device can actually use the image data.
+		VkMappedMemoryRange range;
+		range.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+		range.pNext = nullptr;
+		range.memory = srcMemory;
+		range.offset = 0;
+		range.size = VK_WHOLE_SIZE;
+		vkFlushMappedMemoryRanges(vkDevice, 1, &range);
+
+		vkUnmapMemory(vkDevice, srcMemory);
+	}
+	stbi_image_free(data);
+
+	// Bind memory object and image object
+	if (VK_SUCCESS != vkBindImageMemory(vkDevice, srcImage, srcMemory, 0))
+	{
+		throw std::runtime_error("Failed to bind image and memory");
+	}
+}
+
+void TinyVkRenderer::CreateDstImage()
+{
+	// Create Image Object
+	VkImageCreateInfo createInfo;
+	createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+	createInfo.pNext = nullptr;
+	createInfo.flags = 0;
+	createInfo.imageType = VK_IMAGE_TYPE_2D;
+	createInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
+	createInfo.extent = { 256, 256, 1 };
+	createInfo.arrayLayers = 1;
+	createInfo.mipLevels = 1;
+	createInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+	createInfo.tiling = VK_IMAGE_TILING_OPTIMAL; // 如果CPU要改动这个Image,那就设置成Linear,不然就用Optimal
+	createInfo.usage = VK_IMAGE_USAGE_STORAGE_BIT;
+	createInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+	createInfo.queueFamilyIndexCount = 0;
+	createInfo.pQueueFamilyIndices = nullptr;
+	createInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+	if (VK_SUCCESS != vkCreateImage(vkDevice, &createInfo, nullptr, &dstImage))
+	{
+		throw std::runtime_error("Failed to create dst Image");
+	}
+
+	// Check Requirement
+	VkMemoryRequirements memoryRequirements;
+	vkGetImageMemoryRequirements(vkDevice, dstImage, &memoryRequirements);
+
+	// Find Suitable Memory Type
+	uint32_t memoryIndex = FindMemoryType(
+		memoryRequirements,
+		0,
+		0
+	);
+
+	// Allocate Memory
+	VkMemoryAllocateInfo allocInfo;
+	allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+	allocInfo.pNext = nullptr;
+	allocInfo.allocationSize = 1024 * 1024 * sizeof(float);
+	allocInfo.memoryTypeIndex = memoryIndex;
+
+	if (VK_SUCCESS != vkAllocateMemory(vkDevice, &allocInfo, nullptr, &dstMemory))
+	{
+		throw std::runtime_error("Failed to create device memory");
+	}
+
+	// Bind memory object and image object
+	if (VK_SUCCESS != vkBindImageMemory(vkDevice, dstImage, dstMemory, 0))
+	{
+		throw std::runtime_error("Failed to bind image and memory");
+	}
+}
+
+void TinyVkRenderer::CreateSrcImageView()
+{
+	VkImageViewCreateInfo createInfo;
+	createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+	createInfo.pNext = nullptr;
+	createInfo.flags = 0;
+	createInfo.image = srcImage;
+	createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+	createInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
+	createInfo.components = VkComponentMapping{};
+	createInfo.subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
+
+	if (VK_SUCCESS != vkCreateImageView(vkDevice, &createInfo, nullptr, &srcImageView))
+	{
+		throw std::runtime_error("Failed to create Image view");
+	}
+}
+
+void TinyVkRenderer::CreateDstImageView()
+{
+	VkImageView imageView;
+	VkImageViewCreateInfo createInfo;
+	createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+	createInfo.pNext = nullptr;
+	createInfo.flags = 0;
+	createInfo.image = dstImage;
+	createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+	createInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
+    createInfo.components = VkComponentMapping{};
+	createInfo.subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
+
+	if (VK_SUCCESS != vkCreateImageView(vkDevice, &createInfo, nullptr, &dstImageView))
+	{
+		throw std::runtime_error("Failed to create Image view");
+	}
 }

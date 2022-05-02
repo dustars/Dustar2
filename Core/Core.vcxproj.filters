@@ -9,4 +9,9 @@
     <ClCompile Include="Core.ixx" />
     <ClCompile Include="Utilities\TypeDefines.ixx" />
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Utilities\stb\stb_image.h" />
+    <ClInclude Include="Utilities\stb\stb_image_resize.h" />
+    <ClInclude Include="Utilities\stb\stb_image_write.h" />
+  </ItemGroup>
 </Project>
