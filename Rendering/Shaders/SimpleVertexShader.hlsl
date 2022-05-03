@@ -1,27 +1,11 @@
-// THIS CODE AND INFORMATION IS PROVIDED "AS IS" WITHOUT WARRANTY OF
-// ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO
-// THE IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
-// PARTICULAR PURPOSE.
-//
-// Copyright (c) Microsoft Corporation. All rights reserved
-//----------------------------------------------------------------------
+//===========================================================================
+// Simple Pixel shader
+//===========================================================================
 
-struct VertexShaderInput
+void main(
+    in float4 InPosition : ATTRIBUTE0, in float2 InUV : ATTRIBUTE1,
+    out float4 OutPosition : SV_POSITION, out float2 OutUV : TEXCOORD0)
 {
-    float2 pos : POSITION;
-};
-
-struct PixelShaderInput
-{
-    float4 pos : SV_POSITION;
-};
-
-PixelShaderInput SimpleVertexShader(VertexShaderInput input)
-{
-    PixelShaderInput vertexShaderOutput;
-
-    // For this lesson, set the vertex depth value to 0.5 so it is guaranteed to be drawn.
-    vertexShaderOutput.pos = float4(input.pos, 0.5f, 1.0f);
-
-    return vertexShaderOutput;
+    OutPosition = float4(InPosition.x * 2.0 - 1.0, 1.0 - 2.0 * InPosition.y, 0, 1); // 1 - y是为了flip Y轴？
+    OutUV = InUV;
 }

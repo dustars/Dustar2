@@ -37,47 +37,50 @@ private:
     // Rendering operations. Recording command buffers and submit to the queue.
     void Render();
 
+	void PreRender();
+	void PostRender();
+
+	/*********************************************************/
+    /*-------------------------Window------------------------*/
+    /*********************************************************/
     Window::Win32Window window;
+    uint32_t windowWidth, windowHeight;
+    VkSurfaceKHR vkSurface; //Surface refers to Vulkan's view of a window
+	VkSwapchainKHR vkSwapChain; //SwapChain其实是跟窗口系统强关联的Object，内含N张Images，Vulkan会从里面请求一张可用的Image进行渲染，最后再present，可以说swapchain是Vulkan和外部窗口系统的接口了
+	VkFormat swapChainImageFormat;
+	VkExtent2D swapChainExtent;
+	std::vector<VkImage> vkSwapChainImages; //存储在SwapChain中的N张Images
+    void InitWindowSurface();
+	void InitSwapChain();
+	uint32_t GetAvailableImage(uint64_t waitTimeNano); //从窗口系统获取一张可用的Image
 
     /*********************************************************/
     /*---------------------Initialization--------------------*/
     /*********************************************************/
     VkInstance vkInstance;
-    void InitVulkanInstance();
-    void EnableInstanceLayers(std::vector<const char*>&);
-    void EnableInstanceExtensions(std::vector<const char*>&);
-
     std::vector<VkPhysicalDevice> vkPhysicalDevices;
-    void InitVulkanPhysicalDevices();
-    VkSurfaceKHR vkSurface; //Surface refers to Vulkan's view of a window
-    void InitWindow();
-    
     VkDevice vkDevice;
+
+    void InitVulkanInstance();
+    void InitVulkanPhysicalDevices();
     void InitVulkanLogicalDevice();
+
+	void EnableInstanceLayers(std::vector<const char*>&);
+	void EnableInstanceExtensions(std::vector<const char*>&);
     void EnableDeviceLayers(std::vector<const char*>&);
     void EnableDeviceExtensions(std::vector<const char*>&);
 
-    VkSwapchainKHR vkSwapChain; //SwapChain其实是跟窗口系统强关联的Object，内含N张Images，Vulkan会从里面请求一张可用的Image进行渲染，最后再present，可以说swapchain是Vulkan和外部窗口系统的接口了
-    std::vector<VkImage> vkSwapChainImages; //存储在SwapChain中的N张Images
-    void InitSwapChain();
-    uint32_t GetAvailableImage(uint64_t waitTimeNano); //从窗口系统获取一张可用的Image
-
+	/*********************************************************/
+    /*--------------------Command Buffers--------------------*/
+    /*********************************************************/
     // Queue and Command Buffers
+    VkCommandPool vkCommandPool;
     std::vector<VkQueue> vkQueues;
     uint32_t currentQueueFamilyIndex;
-    VkCommandPool vkCommandPool;
-    // 之后可以每个线程拥有一个cmd，乃至于command Pool
-    VkCommandBuffer cmd;
+    VkCommandBuffer cmd; // 之后可以每个线程拥有一个cmd，乃至于command Pool
     void InitCommandPool();
     void InitCommandBuffers();
 
-    /*********************************************************/
-    /*-----------------Rendering Operations------------------*/
-    /*********************************************************/
-    void PreRender();
-    void PostRender();
-
-    //TODO: Recycling command buffers
     void BeginCommandBuffer();
     void EndCommandBuffer();
     void SubmitCommandBuffer();
@@ -112,7 +115,7 @@ private:
     VkPipeline computePipeline;
     VkPipelineLayout pipelineLayout;
     VkPipelineCache pipelineCache = VK_NULL_HANDLE;
-    void CreateShaderModule(const std::string& shaderFile);
+    void CreateShaderModule(const std::string& shaderFile, VkShaderModule& mod);
     void CreateComputePipeline();
     void CreatePipelineLayout();
     void CreatePipelineCache();
@@ -146,4 +149,35 @@ private: //data
 
     VkImageView srcImageView;
     VkImageView dstImageView;
+
+    typedef struct Vertex
+    {
+        float x,y,z,w;
+        float u,v;
+    };
+
+    // 输出该图片
+    // TODO:
+    // 1. Vertex Buffer 没创建好（还得去弄导入一个数学库）
+    // 2. Commandbuffer，即渲染命令 还没搞好
+    // 3. Presentation 没搞好
+    VkShaderModule vertShader;
+    VkShaderModule fragShader;
+    std::vector<VkImageView> presentImageViews;
+    VkRenderPass renderPass;
+    std::vector<VkFramebuffer> framebuffers;
+    VkPipelineLayout graphicsPipelineLayout;
+    VkPipeline graphicsPipeline;
+    void PresentImageInit();
+    void PresentImageClean();
+
+    void CreatePresentImageView();
+    void CreateRenderPass();
+    void CreateFramebuffer();
+    void CreateGraphicsPipeline();
+
+	/*********************************************************/
+    /*-----------------------Utilities-----------------------*/
+    /*********************************************************/
+    bool needCapture = true;
 };

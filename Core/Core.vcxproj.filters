@@ -8,10 +8,12 @@
   <ItemGroup>
     <ClCompile Include="Core.ixx" />
     <ClCompile Include="Utilities\TypeDefines.ixx" />
+    <ClCompile Include="Utilities\RenderDoc\RenderDocPlugin.ixx" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Utilities\stb\stb_image.h" />
     <ClInclude Include="Utilities\stb\stb_image_resize.h" />
     <ClInclude Include="Utilities\stb\stb_image_write.h" />
+    <ClInclude Include="Utilities\RenderDoc\renderdoc_app.h" />
   </ItemGroup>
 </Project>

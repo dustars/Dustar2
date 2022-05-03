@@ -14,8 +14,8 @@ public:
 	//void InitializeWindow() override;
 	bool Update()			const override;
 
-	HINSTANCE GetInstance() const { return instance; }
-	HWND GetHWDN() const { return windowHandle; }
+	HINSTANCE& GetInstance() { return instance; }
+	HWND& GetHWDN() { return windowHandle; }
 
 private:
 	static LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);

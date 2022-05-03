@@ -12,9 +12,11 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Core.ixx" />
+    <ClCompile Include="Utilities\RenderDoc\RenderDocPlugin.ixx" />
     <ClCompile Include="Utilities\TypeDefines.ixx" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Utilities\RenderDoc\renderdoc_app.h" />
     <ClInclude Include="Utilities\stb\stb_image.h" />
     <ClInclude Include="Utilities\stb\stb_image_resize.h" />
     <ClInclude Include="Utilities\stb\stb_image_write.h" />

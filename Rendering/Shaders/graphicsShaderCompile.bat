@@ -1,2 +1,3 @@
 H:\VisualStudioSolutions\Dustar2\Core\ShaderCompiler\DXC\bin\x64\dxc.exe -spirv -T vs_6_1 -E main H:\VisualStudioSolutions\Dustar2\Rendering\Shaders\SimpleVertexShader.hlsl -Fo H:\VisualStudioSolutions\Dustar2\Rendering\Shaders\SimpleVertexShader.spv
+H:\VisualStudioSolutions\Dustar2\Core\ShaderCompiler\DXC\bin\x64\dxc.exe -spirv -T ps_6_1 -E main H:\VisualStudioSolutions\Dustar2\Rendering\Shaders\SimpleFragmentShader.hlsl -Fo H:\VisualStudioSolutions\Dustar2\Rendering\Shaders\SimpleFragmentShader.spv
 pause

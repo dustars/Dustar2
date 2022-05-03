@@ -10,11 +10,6 @@
 
     Notes:
     日了,Module 和 Macro 似乎并不能很好地混用？那么就得思考Conditonal Compilation如何在Module中使用
-
-    一些未来需要实现的点：
-    1. Transient 资源类型的使用
-    2. 去掉所有hardcoded
-    3. 
 */
 
 #define WINDOW_APP
@@ -22,31 +17,38 @@
 #define STB_IMAGE_IMPLEMENTATION
 
 module;
+#include <iostream>
 #include <fstream>
 #include <stdexcept>
 #include <Utilities\stb\stb_image.h>
 #include <vulkan\vulkan.h>
 module TinyVkRenderer;
 
+import RenderDocPlugin;
+
 TinyVkRenderer::TinyVkRenderer(uint32_t windowWidth, uint32_t windowHeight)
-    : window(windowWidth, windowHeight)
+    : window(windowWidth, windowHeight), windowWidth(windowWidth), windowHeight(windowHeight)
 {
+    RenderDocWindowsInit((void*)&vkInstance, (void*)&window.GetHWDN());
+
     InitVulkanInstance();
     InitVulkanPhysicalDevices();
     InitVulkanLogicalDevice();
-    InitSwapChain();
+
     InitCommandPool();
     InitCommandBuffers();
 
     //-------//
-    InvertImageInit();
+    //InvertImageInit();
+    PresentImageInit();
+    //-------//
 }
 
 TinyVkRenderer::~TinyVkRenderer()
 {
-    InvertImageResourceClean();
+    PresentImageClean();
+    //InvertImageResourceClean();
     vkDestroyCommandPool(vkDevice, vkCommandPool, nullptr);
-    vkDestroySwapchainKHR(vkDevice, vkSwapChain, nullptr);
     vkDestroyDevice(vkDevice, nullptr);
     vkDestroyInstance(vkInstance, nullptr);
 }
@@ -55,8 +57,11 @@ void TinyVkRenderer::Run()
 {
     while (window.Update())
     {
+        //StartRenderDocCapture();
+        //TriggerRenderDocCapture();
         Update();
         Render();
+        //EndRenderDocCapture();
     }
     vkDeviceWaitIdle(vkDevice);
 }
@@ -70,7 +75,7 @@ void TinyVkRenderer::Render()
     PreRender();
     BeginCommandBuffer();
 
-    InvertImageRender();
+    //InvertImageRender();
 
     EndCommandBuffer();
     PostRender();
@@ -199,14 +204,9 @@ void TinyVkRenderer::InitVulkanPhysicalDevices()
     // Do something to choose the appropriate Queue Family
     // For now I'll just set it to default 0 which refers to 15: graphics/compute/transfer/sparse bits are enabled.
     currentQueueFamilyIndex = 0;
-    
-    // Note that we haven't used any of the info above
-    // It's safe to assume there will be a pain in the ass
-    // to properly sort all these properties out.
-    InitWindow();
 }
 
-void TinyVkRenderer::InitWindow()
+void TinyVkRenderer::InitWindowSurface()
 {
 #if defined(WINDOW_APP) && defined(VK_USE_PLATFORM_WIN32_KHR)
     VkWin32SurfaceCreateInfoKHR createInfo;
@@ -308,7 +308,7 @@ void TinyVkRenderer::InitSwapChain()
     VkSurfaceCapabilitiesKHR surfaceCap;
     if (VK_SUCCESS != vkGetPhysicalDeviceSurfaceCapabilitiesKHR(vkPhysicalDevices[0], vkSurface, &surfaceCap))
     {
-        throw std::runtime_error("Failed to get surface capablitities of physical device");
+        throw std::runtime_error("Failed to get surface capabilities of physical device");
     }
 
     uint32_t supportedFormatCount = 0;
@@ -317,12 +317,15 @@ void TinyVkRenderer::InitSwapChain()
     vkGetPhysicalDeviceSurfaceFormatsKHR(vkPhysicalDevices[0], vkSurface, &supportedFormatCount, surfaceFormats.data());
     // CheckFormat(requiredFormat, availableFormat) 总之要选一个可用的format出来
 
-    // 该检查要放在选用queue family并且需要window的时候
+    // 该检查要放在选用 queue family 并且需要 window 的时候
     //VkBool32 supported = VK_FALSE;
     //if (VK_SUCCESS != vkGetPhysicalDeviceSurfaceSupportKHR(vkPhysicalDevices[0], 0, vkSurface, &supported))
     //{
     //    throw std::runtime_error("Something went wrong when checking if queue family supports presesentation to surface");
     //}
+
+    swapChainImageFormat = VK_FORMAT_R8G8B8A8_UNORM;
+    swapChainExtent = surfaceCap.currentExtent;
 
     // Swap Chain算是相当重型了……如下好多参数都决定了整体的基调,需要多加重视
     VkSwapchainCreateInfoKHR createInfo;
@@ -331,18 +334,18 @@ void TinyVkRenderer::InitSwapChain()
     createInfo.flags = 0;
     createInfo.surface = vkSurface;
     createInfo.minImageCount = 3; //at least 3
-    createInfo.imageFormat = VK_FORMAT_R8G8B8A8_UNORM;
+    createInfo.imageFormat = swapChainImageFormat;
     createInfo.imageColorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR; // 现在有一大堆 Color Space...
-    createInfo.imageExtent = surfaceCap.currentExtent;
+    createInfo.imageExtent = swapChainExtent;
     createInfo.imageArrayLayers = 1;
     createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
     createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
-    createInfo.queueFamilyIndexCount = 0;  // ignored if using eclusive mode
-    createInfo.pQueueFamilyIndices = nullptr; // ignored if using eclusive mode
+    createInfo.queueFamilyIndexCount = 0;  // ignored if using exclusive mode
+    createInfo.pQueueFamilyIndices = nullptr; // ignored if using exclusive mode
     createInfo.preTransform = surfaceCap.currentTransform;
     createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
     createInfo.presentMode = VK_PRESENT_MODE_IMMEDIATE_KHR;
-    createInfo.clipped = VK_TRUE; // Don't render into the invisiable region
+    createInfo.clipped = VK_TRUE; // Don't render into the invisible region
     createInfo.oldSwapchain = vkSwapChain;
 
     if (VK_SUCCESS != vkCreateSwapchainKHR(vkDevice, &createInfo, nullptr, &vkSwapChain))
@@ -359,8 +362,7 @@ void TinyVkRenderer::InitSwapChain()
 uint32_t TinyVkRenderer::GetAvailableImage(uint64_t waitTimeNano)
 {
     // TODO: 记得给这个参数,后续还要把Semaphore和Fence作为参数传进来
-    // 或许不应该result image Index 不然switch case里面不好return
-    // waitTimeNano = UINT64_MAX;
+    // 或许不应该result image Index 不然switch case 里面不好 return
     uint32_t imageIndex = 0;
     VkResult result = vkAcquireNextImageKHR(vkDevice, vkSwapChain, waitTimeNano, VK_NULL_HANDLE, VK_NULL_HANDLE, &imageIndex);
     switch (result)
@@ -409,7 +411,7 @@ void TinyVkRenderer::InitCommandBuffers()
     {
         throw std::runtime_error("Failed to create command buffer");
     }
-    // There is no need to explicity free all command buffers
+    // There is no need to explicitly free all command buffers
     // Destroy the Command Pool will also free all cmd buffers as well as associated resources.
 }
 
@@ -688,7 +690,7 @@ void TinyVkRenderer::UpdateDescriptorSets()
     // Update之后,即可调用 vkCmdBindDescriptorSets()
 }
 
-void TinyVkRenderer::CreateShaderModule(const std::string& shaderFile)
+void TinyVkRenderer::CreateShaderModule(const std::string& shaderFile, VkShaderModule& mod)
 {
 	std::ifstream file(shaderFile, std::ios::ate | std::ios::binary);
 
@@ -712,7 +714,7 @@ void TinyVkRenderer::CreateShaderModule(const std::string& shaderFile)
         reinterpret_cast<const uint32_t*>(code.data())
     };
 
-    if (VK_SUCCESS != vkCreateShaderModule(vkDevice, &createInfo ,nullptr ,&shaderModule))
+    if (VK_SUCCESS != vkCreateShaderModule(vkDevice, &createInfo ,nullptr ,&mod))
     {
         throw std::runtime_error("Failed to create shader module");
     }
@@ -806,7 +808,7 @@ void TinyVkRenderer::InvertImageInit()
     CreateDstImageView();
 
     // Create Shader
-    CreateShaderModule("../Rendering/Shaders/Image.spv");
+    CreateShaderModule("../Rendering/Shaders/Image.spv", shaderModule);
     // Create Descriptor Set Layout
     CreateDescriptorSetLayout();
 	// Create Pipeline Layout
@@ -1061,5 +1063,298 @@ void TinyVkRenderer::CreateDstImageView()
 	if (VK_SUCCESS != vkCreateImageView(vkDevice, &createInfo, nullptr, &dstImageView))
 	{
 		throw std::runtime_error("Failed to create Image view");
+	}
+}
+
+void TinyVkRenderer::PresentImageInit()
+{
+    InitWindowSurface();
+    InitSwapChain();
+
+    CreatePresentImageView();
+    CreateRenderPass();
+    CreateFramebuffer();
+    CreateGraphicsPipeline();
+}
+
+void TinyVkRenderer::PresentImageClean()
+{
+	vkDestroyPipeline(vkDevice, graphicsPipeline, nullptr);
+    vkDestroyPipelineLayout(vkDevice, graphicsPipelineLayout, nullptr);
+    vkDestroyShaderModule(vkDevice, vertShader, nullptr);
+	vkDestroyShaderModule(vkDevice, fragShader, nullptr);
+
+    for (size_t i = 0; i < framebuffers.size(); i++)
+    {
+        vkDestroyFramebuffer(vkDevice, framebuffers[i], nullptr);
+    }
+    vkDestroyRenderPass(vkDevice, renderPass, nullptr);
+	for (size_t i = 0; i < presentImageViews.size(); i++)
+	{
+		vkDestroyImageView(vkDevice, presentImageViews[i], nullptr);
+	}
+    vkDestroySwapchainKHR(vkDevice, vkSwapChain, nullptr);
+}
+
+void TinyVkRenderer::CreatePresentImageView()
+{
+    presentImageViews.resize(vkSwapChainImages.size());
+    for (size_t i = 0; i < vkSwapChainImages.size(); i++)
+    {
+		VkImageViewCreateInfo createInfo;
+		createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+		createInfo.pNext = nullptr;
+		createInfo.flags = 0;
+		createInfo.image = vkSwapChainImages[i];
+		createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+		createInfo.format = swapChainImageFormat;
+		createInfo.components = VkComponentMapping{};
+		createInfo.subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
+
+		if (VK_SUCCESS != vkCreateImageView(vkDevice, &createInfo, nullptr, &presentImageViews[i]))
+		{
+			throw std::runtime_error("Failed to create present image view");
+		}
+    }
+}
+
+void TinyVkRenderer::CreateRenderPass()
+{
+    VkAttachmentDescription attachmentDes;
+	attachmentDes.flags = 0; // for memory aliasing
+	attachmentDes.format = VK_FORMAT_R8G8B8A8_UNORM;
+	attachmentDes.samples = VK_SAMPLE_COUNT_1_BIT;
+	attachmentDes.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	attachmentDes.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+	attachmentDes.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE; // Depth is with above two
+	attachmentDes.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+	attachmentDes.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	attachmentDes.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+    VkAttachmentReference attachmentRef;
+    attachmentRef.attachment = 0;
+    attachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+    VkSubpassDescription subpassDes;
+	subpassDes.flags = 0;
+	subpassDes.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+	subpassDes.inputAttachmentCount = 0;
+	subpassDes.pInputAttachments = nullptr;
+	subpassDes.colorAttachmentCount = 1;
+	subpassDes.pColorAttachments = &attachmentRef;
+	subpassDes.pResolveAttachments = nullptr; // for multiSampling
+	subpassDes.pDepthStencilAttachment = nullptr;
+	subpassDes.preserveAttachmentCount = 0;
+	subpassDes.pPreserveAttachments = nullptr;
+
+    // Non-attachment resources dependency between subpasses.
+    //VkSubpassDependency subpassDen;
+	//subpassDen.srcSubpass = ?;
+	//subpassDen.dstSubpass = ?;
+	//subpassDen.srcStageMask = ?;
+	//subpassDen.dstStageMask = ?;
+	//subpassDen.srcAccessMask = ?;
+	//subpassDen.dstAccessMask = ?;
+	//subpassDen.dependencyFlags = ?;
+
+    VkRenderPassCreateInfo createInfo;
+    createInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+    createInfo.pNext = nullptr;
+    createInfo.flags = 0;
+    createInfo.attachmentCount = 1;
+    createInfo.pAttachments = &attachmentDes;
+    createInfo.subpassCount = 1;
+	createInfo.pSubpasses = &subpassDes;
+	createInfo.dependencyCount = 0;
+	createInfo.pDependencies = nullptr;
+
+	if (VK_SUCCESS != vkCreateRenderPass(vkDevice, &createInfo, nullptr, &renderPass))
+	{
+		throw std::runtime_error("Failed to create Render Pass");
+	}
+}
+
+void TinyVkRenderer::CreateFramebuffer()
+{
+	framebuffers.resize(vkSwapChainImages.size());
+    for (size_t i = 0; i < presentImageViews.size(); i++)
+    {
+        VkFramebufferCreateInfo createInfo;
+        createInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+        createInfo.pNext = nullptr;
+        createInfo.flags = 0;
+        createInfo.renderPass = renderPass;
+        createInfo.attachmentCount = 1;
+        // 千万注意，RenderPass里Attachment References就是会按照创建的顺序作为indices访问如下的array
+        // 可以说是默认两边顺序要一样！千万不要弄错！！！
+        createInfo.pAttachments = &presentImageViews[i];
+        createInfo.width = swapChainExtent.width;
+        createInfo.height = swapChainExtent.height;
+        createInfo.layers = 1;
+
+        if (VK_SUCCESS != vkCreateFramebuffer(vkDevice, &createInfo, nullptr, &framebuffers[i]))
+        {
+            throw std::runtime_error("Failed to create Framebuffer");
+        }
+    }
+}
+
+void TinyVkRenderer::CreateGraphicsPipeline()
+{
+    CreateShaderModule("../Rendering/Shaders/SimpleVertexShader.spv", vertShader);
+    CreateShaderModule("../Rendering/Shaders/SimpleFragmentShader.spv", fragShader);
+	std::vector<VkPipelineShaderStageCreateInfo> shaderCreateInfo;
+    shaderCreateInfo.emplace_back(
+		VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+		nullptr,
+		0,
+		VK_SHADER_STAGE_VERTEX_BIT,
+		vertShader,
+		"main",
+        nullptr
+    );
+
+	shaderCreateInfo.emplace_back(
+		VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+		nullptr,
+		0,
+		VK_SHADER_STAGE_FRAGMENT_BIT,
+		fragShader,
+		"main",
+		nullptr
+	);
+
+    std::vector<VkVertexInputBindingDescription> bindings;
+    bindings.emplace_back(
+        0, //Binding Index
+        sizeof(Vertex), //Stride 就是Vertex的数据结构大小
+        VK_VERTEX_INPUT_RATE_VERTEX //Index or Instancing
+    );
+
+    std::vector<VkVertexInputAttributeDescription> attributes;
+    attributes.emplace_back( // Vertex Position
+        0, //Location
+        0, //Binding Index
+        VK_FORMAT_R32G32B32A32_SFLOAT,
+        0
+    );
+	attributes.emplace_back( // Vertex UV
+		1, //Location
+		0, //Binding Index
+		VK_FORMAT_R32G32_SFLOAT,
+		sizeof(float) * 4
+	);
+
+    VkPipelineVertexInputStateCreateInfo vertexCreateInfo;
+	vertexCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+	vertexCreateInfo.pNext = nullptr;
+	vertexCreateInfo.flags = 0;
+	vertexCreateInfo.vertexBindingDescriptionCount = bindings.size();
+	vertexCreateInfo.pVertexBindingDescriptions = bindings.data();
+	vertexCreateInfo.vertexAttributeDescriptionCount = attributes.size();
+	vertexCreateInfo.pVertexAttributeDescriptions = attributes.data();
+
+    VkPipelineInputAssemblyStateCreateInfo InputCreateInfo;
+	InputCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+	InputCreateInfo.pNext = nullptr;
+	InputCreateInfo.flags= 0;
+	InputCreateInfo.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+	InputCreateInfo.primitiveRestartEnable = VK_FALSE;
+
+    VkViewport viewport = { 0.f, 0.f, swapChainExtent.width, swapChainExtent.height, 0.f, 1.f };
+    VkRect2D scissor = { {0,0} , swapChainExtent };
+    VkPipelineViewportStateCreateInfo viewportCreateInfo;
+	viewportCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+	viewportCreateInfo.pNext = nullptr;
+	viewportCreateInfo.flags = 0;
+	viewportCreateInfo.viewportCount = 1;
+	viewportCreateInfo.pViewports = &viewport;
+	viewportCreateInfo.scissorCount = 1;
+	viewportCreateInfo.pScissors = &scissor;
+
+    VkPipelineRasterizationStateCreateInfo rasterizationCreateInfo;
+	rasterizationCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+	rasterizationCreateInfo.pNext = nullptr;
+	rasterizationCreateInfo.flags = 0;
+	rasterizationCreateInfo.depthClampEnable = VK_TRUE;
+	rasterizationCreateInfo.rasterizerDiscardEnable = VK_FALSE; //为啥这是个总控开关？？
+	rasterizationCreateInfo.polygonMode = VK_POLYGON_MODE_FILL; //WireFrame Mode和点云 Mode启动！
+	rasterizationCreateInfo.cullMode = VK_CULL_MODE_BACK_BIT;
+	rasterizationCreateInfo.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+	rasterizationCreateInfo.depthBiasEnable = VK_FALSE;
+	rasterizationCreateInfo.depthBiasConstantFactor = 0; // Optional
+	rasterizationCreateInfo.depthBiasClamp = 0; // Optional
+	rasterizationCreateInfo.depthBiasSlopeFactor = 0; // Optional
+	rasterizationCreateInfo.lineWidth = 1.0f;
+
+    VkPipelineMultisampleStateCreateInfo multisamplingCreateInfo{}; //我人傻了，为什么这个地方必须要加{}? 不然Pipeline创建老是失败？？
+	multisamplingCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+	multisamplingCreateInfo.sampleShadingEnable = VK_FALSE;
+	multisamplingCreateInfo.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+	multisamplingCreateInfo.minSampleShading = 1.0f; // Optional
+	multisamplingCreateInfo.pSampleMask = nullptr; // Optional
+	multisamplingCreateInfo.alphaToCoverageEnable = VK_FALSE; // Optional
+	multisamplingCreateInfo.alphaToOneEnable = VK_FALSE; // Optional
+
+	VkPipelineColorBlendAttachmentState attachmentState;
+	attachmentState.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+	attachmentState.blendEnable = VK_FALSE;
+	attachmentState.srcColorBlendFactor = VK_BLEND_FACTOR_ONE; // Optional
+	attachmentState.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO; // Optional
+	attachmentState.colorBlendOp = VK_BLEND_OP_ADD; // Optional
+	attachmentState.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE; // Optional
+	attachmentState.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO; // Optional
+	attachmentState.alphaBlendOp = VK_BLEND_OP_ADD; // Optional
+
+	VkPipelineColorBlendStateCreateInfo blendCreateInfo{}; //我人傻了，为什么这个地方必须要加{}? 不然Pipeline创建老是失败？？
+	blendCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+	blendCreateInfo.logicOpEnable = VK_FALSE;
+	blendCreateInfo.logicOp = VK_LOGIC_OP_COPY; // Optional
+	blendCreateInfo.attachmentCount = 1;
+	blendCreateInfo.pAttachments = &attachmentState; 
+	blendCreateInfo.blendConstants[0] = 0.0f; // Optional
+	blendCreateInfo.blendConstants[1] = 0.0f; // Optional
+	blendCreateInfo.blendConstants[2] = 0.0f; // Optional
+	blendCreateInfo.blendConstants[3] = 0.0f; // Optional
+
+    // 先创建一个空的Pipeline Layout
+	VkPipelineLayoutCreateInfo pipelineLayout;
+	pipelineLayout.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+    pipelineLayout.pNext = nullptr;
+    pipelineLayout.flags = 0;
+	pipelineLayout.setLayoutCount = 0; // Optional
+	pipelineLayout.pSetLayouts = nullptr; // Optional
+	pipelineLayout.pushConstantRangeCount = 0; // Optional
+	pipelineLayout.pPushConstantRanges = nullptr; // Optional
+
+	if (VK_SUCCESS != vkCreatePipelineLayout(vkDevice, &pipelineLayout, nullptr, &graphicsPipelineLayout))
+	{
+		throw std::runtime_error("Failed to create Graphics Pipeline");
+	}
+
+    VkGraphicsPipelineCreateInfo pipelineCreateInfo;
+	pipelineCreateInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+	pipelineCreateInfo.pNext = nullptr;
+	pipelineCreateInfo.flags = VK_PIPELINE_CREATE_DISABLE_OPTIMIZATION_BIT;
+	pipelineCreateInfo.stageCount = 2;
+	pipelineCreateInfo.pStages = shaderCreateInfo.data();
+	pipelineCreateInfo.pVertexInputState = &vertexCreateInfo;
+	pipelineCreateInfo.pInputAssemblyState = &InputCreateInfo;
+    pipelineCreateInfo.pTessellationState = nullptr;
+	pipelineCreateInfo.pViewportState = &viewportCreateInfo;
+	pipelineCreateInfo.pRasterizationState = &rasterizationCreateInfo;
+	pipelineCreateInfo.pMultisampleState = &multisamplingCreateInfo;
+	pipelineCreateInfo.pDepthStencilState = nullptr;
+	pipelineCreateInfo.pColorBlendState = &blendCreateInfo;
+	pipelineCreateInfo.pDynamicState = nullptr;
+	pipelineCreateInfo.layout = graphicsPipelineLayout; //先渲染一个三角形出来吧……
+	pipelineCreateInfo.renderPass = renderPass;
+	pipelineCreateInfo.subpass = 0;
+	pipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE;
+	pipelineCreateInfo.basePipelineIndex = -1;
+
+	if (VK_SUCCESS != vkCreateGraphicsPipelines(vkDevice, VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr, &graphicsPipeline))
+	{
+		throw std::runtime_error("Failed to create Graphics Pipeline");
 	}
 }
