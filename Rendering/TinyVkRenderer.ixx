@@ -155,6 +155,12 @@ private: //data
         float x,y,z,w;
         float u,v;
     };
+    std::vector<Vertex> vertexData =
+    {
+        {0.f, 0.5f, 0.f, 1.f, 0.5f, 1.f},
+        {-0.5f, -0.5f, 0.f, 1.f, 0.f, 0.f},
+        {0.5f, -0.5f, 0.f, 1.f, 1.f, 0.f}
+    };
 
     // 输出该图片
     // TODO:
@@ -163,6 +169,8 @@ private: //data
     // 3. Presentation 没搞好
     VkShaderModule vertShader;
     VkShaderModule fragShader;
+
+    VkBuffer vertexBuffer;
     std::vector<VkImageView> presentImageViews;
     VkRenderPass renderPass;
     std::vector<VkFramebuffer> framebuffers;
@@ -170,14 +178,26 @@ private: //data
     VkPipeline graphicsPipeline;
     void PresentImageInit();
     void PresentImageClean();
+    void PresentImageRender();
 
+    void CreateVertexBuffer();
     void CreatePresentImageView();
     void CreateRenderPass();
     void CreateFramebuffer();
     void CreateGraphicsPipeline();
+
+    void CmdBeginRenderPass(VkFramebuffer& framebuffer);
+    void CmdEndRenderPass();
+    void CmdDraw();
+    void ImagePresentation(uint32_t imageIndex);
 
 	/*********************************************************/
     /*-----------------------Utilities-----------------------*/
     /*********************************************************/
     bool needCapture = true;
 };
+
+//class GraphicsPipeline : Pipeline {
+//	CreatePipeline();
+//	CreateResources(); ..
+//};

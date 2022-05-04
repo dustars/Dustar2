@@ -73,11 +73,10 @@ void TinyVkRenderer::Update()
 void TinyVkRenderer::Render()
 {
     PreRender();
-    BeginCommandBuffer();
 
     //InvertImageRender();
+    PresentImageRender();
 
-    EndCommandBuffer();
     PostRender();
 }
 
@@ -220,6 +219,17 @@ void TinyVkRenderer::InitWindowSurface()
     {
         throw std::runtime_error("Failed to create Win32 Surface");
     }
+
+    // Check if the queue is able to present images
+	VkBool32 supported;
+	if (VK_SUCCESS != vkGetPhysicalDeviceSurfaceSupportKHR(vkPhysicalDevices[0], 0, vkSurface, &supported))
+	{
+		throw std::runtime_error("Failed to get surface presentation support");
+	}
+	if (!supported)
+	{
+		throw std::runtime_error("Current selected queue doesn't support Presentation");
+	}
 #endif
 }
 
@@ -506,7 +516,7 @@ void TinyVkRenderer::CheckFormatProperties()
     // 同时还有对 Formatted Buffer 的支持程度
     // 该查询方法是比较泛泛的
     VkFormatProperties properties;
-    vkGetPhysicalDeviceFormatProperties(vkPhysicalDevices[0], /*VkFomrat*/VK_FORMAT_R8G8B8A8_UNORM, &properties);
+    vkGetPhysicalDeviceFormatProperties(vkPhysicalDevices[0], /*VkFomrat*/swapChainImageFormat, &properties);
 
     // 专门针对Image的Format Properties检查要调用：
     VkImageFormatProperties imageProperties;
@@ -845,7 +855,7 @@ void TinyVkRenderer::InvertImageResourceClean()
 
 void TinyVkRenderer::InvertImageRender()
 {
-    // Layout:???
+	BeginCommandBuffer();
 
 	// 计算管线和图形管线的Binding可能需要解耦,是一个相当复杂的过程啊唉……
     // 妈的 光追混合渲染管线咋弄？？？
@@ -857,6 +867,9 @@ void TinyVkRenderer::InvertImageRender()
 		0, nullptr); // Dynamic uniform or shader storage bindings offset.
 	// TODO 找机会试一下Indirect Dispatch
 	vkCmdDispatch(cmd, 16, 16, 1);
+
+	EndCommandBuffer();
+	SubmitCommandBuffer();
 }
 
 void TinyVkRenderer::InvertImageUpdate()
@@ -953,6 +966,8 @@ void TinyVkRenderer::CreateSrcImage(const std::string& filename)
 		{
 			throw std::runtime_error("Failed to Map Memory");
 		}
+
+        memcpy(mappedData, data, width * height * 32);
 
 		// Flush the memory so the device can actually use the image data.
 		VkMappedMemoryRange range;
@@ -1071,6 +1086,7 @@ void TinyVkRenderer::PresentImageInit()
     InitWindowSurface();
     InitSwapChain();
 
+    CreateVertexBuffer();
     CreatePresentImageView();
     CreateRenderPass();
     CreateFramebuffer();
@@ -1094,6 +1110,88 @@ void TinyVkRenderer::PresentImageClean()
 		vkDestroyImageView(vkDevice, presentImageViews[i], nullptr);
 	}
     vkDestroySwapchainKHR(vkDevice, vkSwapChain, nullptr);
+}
+
+void TinyVkRenderer::PresentImageRender()
+{
+    uint32_t imageIndex = GetAvailableImage(UINT64_MAX);
+    //TODO: Present Loop
+    BeginCommandBuffer();
+    CmdBeginRenderPass(framebuffers[imageIndex]);
+    CmdDraw();
+    CmdEndRenderPass();
+	EndCommandBuffer();
+	SubmitCommandBuffer();
+    // After submission, the rendering works are done. Now the image is ready for presentation.
+    ImagePresentation(imageIndex);
+}
+
+void TinyVkRenderer::CreateVertexBuffer()
+{
+    VkBufferCreateInfo createInfo;
+	createInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+	createInfo.pNext = nullptr;
+	createInfo.flags = 0;
+	createInfo.size = sizeof(Vertex) * 3;
+	createInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+	createInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+	createInfo.queueFamilyIndexCount = 0; //ignored
+	createInfo.pQueueFamilyIndices = nullptr;
+
+	if (VK_SUCCESS != vkCreateBuffer(vkDevice, &createInfo, nullptr, &vertexBuffer))
+	{
+		throw std::runtime_error("Failed to Vertex Buffer");
+	}
+
+	// Check Requirement
+	VkMemoryRequirements memoryRequirements;
+    vkGetBufferMemoryRequirements(vkDevice, vertexBuffer, &memoryRequirements);
+
+	// Find Suitable Memory Type
+	uint32_t memoryIndex = FindMemoryType(
+		memoryRequirements,
+		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
+	);
+
+	// Allocate Memory
+	VkMemoryAllocateInfo allocInfo;
+	allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+	allocInfo.pNext = nullptr;
+	allocInfo.allocationSize = 1024 * 1024 * sizeof(float);
+	allocInfo.memoryTypeIndex = memoryIndex;
+
+	if (VK_SUCCESS != vkAllocateMemory(vkDevice, &allocInfo, nullptr, &srcMemory))
+	{
+		throw std::runtime_error("Failed to create device memory");
+	}
+
+	{ // Mapping
+		void* mappedData;
+		if (VK_SUCCESS != vkMapMemory(vkDevice, srcMemory, 0, VK_WHOLE_SIZE, 0, &mappedData))
+		{
+			throw std::runtime_error("Failed to Map Memory");
+		}
+
+        memcpy(mappedData, vertexData.data(), sizeof(Vertex) * 3);
+
+		// Flush the memory so the device can actually use the image data.
+		VkMappedMemoryRange range;
+		range.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+		range.pNext = nullptr;
+		range.memory = srcMemory;
+		range.offset = 0;
+		range.size = VK_WHOLE_SIZE;
+		vkFlushMappedMemoryRanges(vkDevice, 1, &range);
+
+		vkUnmapMemory(vkDevice, srcMemory);
+	}
+
+	// Bind memory object and image object
+	if (VK_SUCCESS != vkBindBufferMemory(vkDevice, vertexBuffer, srcMemory, 0))
+	{
+		throw std::runtime_error("Failed to bind buffer and memory");
+	}
 }
 
 void TinyVkRenderer::CreatePresentImageView()
@@ -1122,14 +1220,14 @@ void TinyVkRenderer::CreateRenderPass()
 {
     VkAttachmentDescription attachmentDes;
 	attachmentDes.flags = 0; // for memory aliasing
-	attachmentDes.format = VK_FORMAT_R8G8B8A8_UNORM;
+	attachmentDes.format = swapChainImageFormat;
 	attachmentDes.samples = VK_SAMPLE_COUNT_1_BIT;
-	attachmentDes.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	attachmentDes.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 	attachmentDes.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
 	attachmentDes.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE; // Depth is with above two
 	attachmentDes.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 	attachmentDes.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	attachmentDes.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+	attachmentDes.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
     VkAttachmentReference attachmentRef;
     attachmentRef.attachment = 0;
@@ -1147,14 +1245,14 @@ void TinyVkRenderer::CreateRenderPass()
 	subpassDes.preserveAttachmentCount = 0;
 	subpassDes.pPreserveAttachments = nullptr;
 
-    // Non-attachment resources dependency between subpasses.
-    //VkSubpassDependency subpassDen;
-	//subpassDen.srcSubpass = ?;
-	//subpassDen.dstSubpass = ?;
-	//subpassDen.srcStageMask = ?;
-	//subpassDen.dstStageMask = ?;
-	//subpassDen.srcAccessMask = ?;
-	//subpassDen.dstAccessMask = ?;
+    // Resources dependency between subpasses.
+    VkSubpassDependency subpassDen;
+	subpassDen.srcSubpass = VK_SUBPASS_EXTERNAL;
+	subpassDen.dstSubpass = 0;
+	subpassDen.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	subpassDen.dstStageMask = 0;
+	subpassDen.srcAccessMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	subpassDen.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 	//subpassDen.dependencyFlags = ?;
 
     VkRenderPassCreateInfo createInfo;
@@ -1276,10 +1374,10 @@ void TinyVkRenderer::CreateGraphicsPipeline()
 	rasterizationCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
 	rasterizationCreateInfo.pNext = nullptr;
 	rasterizationCreateInfo.flags = 0;
-	rasterizationCreateInfo.depthClampEnable = VK_TRUE;
+	rasterizationCreateInfo.depthClampEnable = VK_FALSE;
 	rasterizationCreateInfo.rasterizerDiscardEnable = VK_FALSE; //为啥这是个总控开关？？
 	rasterizationCreateInfo.polygonMode = VK_POLYGON_MODE_FILL; //WireFrame Mode和点云 Mode启动！
-	rasterizationCreateInfo.cullMode = VK_CULL_MODE_BACK_BIT;
+	rasterizationCreateInfo.cullMode = VK_CULL_MODE_NONE; // 暂时不Cull 免得出错
 	rasterizationCreateInfo.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
 	rasterizationCreateInfo.depthBiasEnable = VK_FALSE;
 	rasterizationCreateInfo.depthBiasConstantFactor = 0; // Optional
@@ -1357,4 +1455,76 @@ void TinyVkRenderer::CreateGraphicsPipeline()
 	{
 		throw std::runtime_error("Failed to create Graphics Pipeline");
 	}
+}
+
+void TinyVkRenderer::CmdBeginRenderPass(VkFramebuffer& framebuffer)
+{
+    VkRect2D area = { {0,0},swapChainExtent };
+    VkClearValue clearColor; 
+    clearColor.color = { 1.0f, 0.f, 0.f, 1.f };
+    VkRenderPassBeginInfo beginInfo;
+	beginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+	beginInfo.pNext = nullptr;
+    beginInfo.renderPass = renderPass;
+    beginInfo.framebuffer = framebuffer;
+	beginInfo.renderArea = area;
+	beginInfo.clearValueCount = 1;
+	beginInfo.pClearValues = &clearColor;
+
+    vkCmdBeginRenderPass(cmd, &beginInfo, VK_SUBPASS_CONTENTS_INLINE);
+}
+
+void TinyVkRenderer::CmdEndRenderPass()
+{
+    vkCmdEndRenderPass(cmd);
+}
+
+void TinyVkRenderer::CmdDraw()
+{
+    //TODO: Image Layout Transition..
+    VkDeviceSize offsets[] = { 0 };
+    vkCmdBindVertexBuffers(cmd, 0, 1, &vertexBuffer, offsets);
+
+    vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
+
+    vkCmdDraw(cmd, vertexData.size(), 1, 0, 0);
+
+    // subpass dependencies 可以完成renderpass内的 Image Layout Transition
+ //   //Image transition for presentation
+ //   VkImageMemoryBarrier presentBarrier;
+	//presentBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+	//presentBarrier.pNext = nullptr;
+	//presentBarrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+	//presentBarrier.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+	//presentBarrier.oldLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
+	//presentBarrier.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+	//presentBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	//presentBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	//presentBarrier.image = ? ;
+	//presentBarrier.subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
+}
+
+void TinyVkRenderer::ImagePresentation(uint32_t imageIndex)
+{
+    VkResult result;
+
+    VkPresentInfoKHR presentInfo;
+	presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+	presentInfo.pNext = nullptr;
+	presentInfo.waitSemaphoreCount = 0;
+	presentInfo.pWaitSemaphores = nullptr;
+	presentInfo.swapchainCount = 1;
+	presentInfo.pSwapchains = &vkSwapChain;
+	presentInfo.pImageIndices = &imageIndex;
+	presentInfo.pResults = &result;
+
+	if (VK_SUCCESS != vkQueuePresentKHR(vkQueues[0], &presentInfo))
+	{
+		throw std::runtime_error("Failed to present the Image");
+	}
+
+    if (VK_SUCCESS != result)
+    {
+        throw std::runtime_error("Presentation has gone wrong!");
+    }
 }
