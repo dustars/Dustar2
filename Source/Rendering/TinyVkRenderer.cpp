@@ -2,27 +2,23 @@
     Module Description:
     The implementation of TinyVkRenderer.
 
-    Author:
-    Zhao Han Ning
-
     Created Date:
     2022.4.18
 
     Notes:
     日了,Module 和 Macro 似乎并不能很好地混用？那么就得思考Conditonal Compilation如何在Module中使用
 */
-
+module;
 #define WINDOW_APP
-#define VK_USE_PLATFORM_WIN32_KHR
-#define STB_IMAGE_IMPLEMENTATION
-
 #define RENDER_DOC_ENABLE
 
-module;
 #include <iostream>
 #include <fstream>
 #include <stdexcept>
+
+#define STB_IMAGE_IMPLEMENTATION
 #include <Utilities\stb\stb_image.h>
+#define VK_USE_PLATFORM_WIN32_KHR
 #include <vulkan\vulkan.h>
 module TinyVkRenderer;
 
@@ -32,7 +28,7 @@ TinyVkRenderer::TinyVkRenderer(uint32_t windowWidth, uint32_t windowHeight)
     : window(windowWidth, windowHeight), windowWidth(windowWidth), windowHeight(windowHeight)
 {
 #ifdef RENDER_DOC_ENABLE
-    //RenderDocWindowsInit((void*)&vkInstance, (void*)&window.GetHWDN());
+    RenderDocWindowsInit((void*)&vkInstance, (void*)&window.GetHWDN());
 #endif
 
     InitVulkanInstance();
@@ -1114,6 +1110,7 @@ void TinyVkRenderer::PresentImageClean()
 		vkDestroyImageView(vkDevice, presentImageViews[i], nullptr);
 	}
     vkDestroySwapchainKHR(vkDevice, vkSwapChain, nullptr);
+    vkDestroySurfaceKHR(vkInstance, vkSurface, nullptr);
 }
 
 void TinyVkRenderer::PresentImageRender()

@@ -4,11 +4,8 @@
     TinyRenderer is exclusively for learning Vulkan, thus
     very likely to be removed in the near future.
 
-    Author:
-    Zhao Han Ning
-
-    Created Date:
-    2022.4.17
+	Created Date:
+	2022.4.17
 
     Notes:
 */

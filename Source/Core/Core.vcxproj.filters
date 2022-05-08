@@ -9,6 +9,10 @@
     <ClCompile Include="Core.ixx" />
     <ClCompile Include="Utilities\TypeDefines.ixx" />
     <ClCompile Include="Utilities\RenderDoc\RenderDocPlugin.ixx" />
+    <ClCompile Include="Input\Mouse.ixx" />
+    <ClCompile Include="Input\Bindings.ixx" />
+    <ClCompile Include="Input\Input.ixx" />
+    <ClCompile Include="Input\Keyboard.ixx" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Utilities\stb\stb_image.h" />

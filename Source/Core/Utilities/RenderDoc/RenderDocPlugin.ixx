@@ -9,12 +9,16 @@
     2022.5.3
 */
 
+module;
+
 #include <windows.h>
 #include <assert.h>
 #include <string>
 #include "renderdoc_app.h"
 
 export module RenderDocPlugin;
+
+import Input;
 
 export void RenderDocWindowsInit(void*, void*);
 export void StartRenderDocCapture();
@@ -57,6 +61,8 @@ void RenderDocWindowsInit(void* deviceIn, void* wndHandleIn)
 
 	rdoc_api->SetActiveWindow(device, wndHandle);
 	rdoc_api->SetCaptureFilePathTemplate("../../../Resources/RenderDocCapture/Capture");
+
+	Input::InputManager::RegisterBinding(Input::MouseBindings::LEFT_UP, []() { TriggerRenderDocCapture(); });
 }
 
 // To start a frame capture, call StartFrameCapture.

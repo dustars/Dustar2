@@ -63,11 +63,10 @@
       </AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <SubSystem>Console</SubSystem>
+      <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>C:\VulkanSDK\1.3.204.1\Lib</AdditionalLibraryDirectories>
-      <EntryPointSymbol>
-      </EntryPointSymbol>
+      <EntryPointSymbol>mainCRTStartup</EntryPointSymbol>
       <AdditionalDependencies>vulkan-1.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>

@@ -63,7 +63,8 @@
       <ScanSourceForModuleDependencies>false</ScanSourceForModuleDependencies>
       <AdditionalBMIDirectories>
       </AdditionalBMIDirectories>
-      <AdditionalModuleDependencies>$(SolutionDir)Core</AdditionalModuleDependencies>
+      <AdditionalModuleDependencies>
+      </AdditionalModuleDependencies>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -87,7 +88,8 @@
       <ScanSourceForModuleDependencies>false</ScanSourceForModuleDependencies>
       <AdditionalBMIDirectories>
       </AdditionalBMIDirectories>
-      <AdditionalModuleDependencies>$(SolutionDir)Core</AdditionalModuleDependencies>
+      <AdditionalModuleDependencies>
+      </AdditionalModuleDependencies>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

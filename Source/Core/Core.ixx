@@ -14,4 +14,5 @@
 
 export module Core;
 
+export import Input;
 //export import TypeDefines;

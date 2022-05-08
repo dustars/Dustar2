@@ -2,28 +2,15 @@
     Module Description:
     The implementation of Module partition uint WindowSystem Win32.
 
-    Author:
-    Zhao Han Ning
-
     Created Date:
     2022.4.17
-
-    Notes:
-    记住windows.h的实现（至少部分？）是user32.lib，在需要链接的Project Properties里面一定要把Linker的
-    Addtional Dependencies设置好（默认的Inherit就有了，但是我之前自己给修改没了）
-
-    TODO:
-    1. I/O
-    2. Window Proc processes more message types
-
-    // ShowCursor(FALSE);
 */
 
 module;
 #include <stdexcept>
 module WindowSystem:Win32;
 
-import <Windows.h>;
+import Input;
 
 namespace Window
 {
@@ -35,10 +22,8 @@ Win32Window::Win32Window(uint32_t width, uint32_t height)
 	// Register the window class.
 	WNDCLASS wc = { };
 
-	HINSTANCE instance = GetModuleHandle( NULL );
-
 	wc.lpfnWndProc   = (WNDPROC)WindowProc;
-	wc.hInstance     = instance;
+	wc.hInstance     = GetModuleHandle(NULL);
 	wc.lpszClassName = CLASS_NAME;
 
     if(!RegisterClass(&wc)) {
@@ -54,7 +39,7 @@ Win32Window::Win32Window(uint32_t width, uint32_t height)
 	windowHandle = CreateWindowEx(
         0,                              // Optional window styles.
         CLASS_NAME,                     // Window class
-        L"Vulkan Learning",                // Window text
+        L"Dustars v2.0",                // Window text
         WS_OVERLAPPEDWINDOW|WS_VISIBLE,            // Window style
 
         centerX - width/2, centerY - height/2,      //Window position
@@ -62,8 +47,8 @@ Win32Window::Win32Window(uint32_t width, uint32_t height)
 
         NULL,       // Parent window    
         NULL,       // Menu
-        instance,   // Instance handle
-        NULL        // Additional application data
+        GetModuleHandle(NULL),   // Instance handle
+        this        // Additional application data
     );
 
     if(!windowHandle) throw std::runtime_error("Cannot Create Window");
@@ -72,13 +57,15 @@ Win32Window::Win32Window(uint32_t width, uint32_t height)
 bool Win32Window::Update() const
 {
     MSG msg{};
-    bool result;
-    if ( result = GetMessage(&msg, NULL, 0, 0))
+
+    if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
     {
         TranslateMessage(&msg);
         DispatchMessage(&msg);
+
+        Input::InputManager::Update();
     }
-    return result;
+    return bContinue;
 }
 
 // TODO: 对于不少Messages的处理最好是开一个thread，然后主线程继续执行，不然整个渲染就卡住了……
@@ -86,53 +73,63 @@ LRESULT Win32Window::WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 {
     switch (uMsg)
     {
+        case WM_CREATE:
+		{
+			CREATESTRUCT* pCreate = (CREATESTRUCT*)lParam;
+			Win32Window* pThis = (Win32Window*)pCreate->lpCreateParams;
+			SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR)pThis);
+            return 0;
+		}
+        case WM_CLOSE:
+        {
+            Win32Window *pThis = (Win32Window*)GetWindowLongPtr(hwnd, GWLP_USERDATA);
+            pThis->bContinue = false;
+            return 0;
+        }
         case WM_DESTROY:
         {
             PostQuitMessage(0);
             return 0;
         }
-        /*
-        
-        
-        
-
-        case WM_PAINT:
+        case WM_MOUSEMOVE:
         {
-            PAINTSTRUCT ps;
-            HDC hdc = BeginPaint(hwnd, &ps);
-
-            // All painting occurs here, between BeginPaint and EndPaint.
-
-            FillRect(hdc, &ps.rcPaint, (HBRUSH) (COLOR_WINDOW+1));
-
-            EndPaint(hwnd, &ps);
+			//int xPos = GET_X_LPARAM(lParam);
+			//int yPos = GET_Y_LPARAM(lParam);
+            return 0;
         }
-        return 0;
-        case WM_SIZE:
+        case WM_LBUTTONDOWN:
         {
-			//int width = LOWORD(lParam);  // Macro to get the low-order word.
-			//int height = HIWORD(lParam); // Macro to get the high-order word.
-
-			//// Respond to the message:
-			// Recreate the window(hwnd, (UINT)wParam, width, height);
-            break;
+			//int xPos = GET_X_LPARAM(lParam);
+			//int yPos = GET_Y_LPARAM(lParam);
+            return 0;
         }
+		case WM_LBUTTONUP:
+		{
+            Input::InputManager::UpdateMouse(Input::MouseBindings::LEFT_UP);
+			return 0;
+		}
+        // 目前不处理 system key
         case WM_KEYDOWN:
         {
-            break;
+            return 0;
         }
 		case WM_KEYUP:
 		{
             // lParam bit 30 indicates the previous key flag, which is set to 1 for repeated key-down messages
             
-			break;
+			return 0;
 		}
 		case WM_CHAR:
         {
-			break;
+			return 0;
         }
-
-        */
+		case WM_SIZE:
+		{
+			// UINT width = LOWORD(lParam);
+			// UINT height = HIWORD(lParam);
+			// 给Renderer发送重新创建SwapChain的信息
+			return 0;
+		}
     }
     // Default action for unhandled messages
 	return DefWindowProc(hwnd, uMsg, wParam, lParam);

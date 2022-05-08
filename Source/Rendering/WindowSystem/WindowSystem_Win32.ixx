@@ -1,8 +1,21 @@
+/*
+    Module Description:
+    The interface of Module partition uint WindowSystem:Win32.
+
+    Created Date:
+    2022.4.17
+
+	TODO:
+	1. I/O Module implementation + Window Procedure process
+	2. Cursor Control and lock
+	3. borderless fullscreen
+*/
+
 export module WindowSystem:Win32;
 
+import :WindowBase;
 import <stdint.h>;
 import <Windows.h>;
-import :WindowBase;
 
 namespace Window
 {
@@ -20,7 +33,7 @@ public:
 	HWND& GetHWDN() { return windowHandle; }
 
 private:
-
+	bool bContinue = true;
 	HINSTANCE instance;
 	HWND windowHandle;
 };
