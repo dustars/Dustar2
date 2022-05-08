@@ -8,9 +8,6 @@
     Created Date:
     2022.4.17
 
-    Last Updated:
-    2022.4.18
-
     Notes:
     记住windows.h的实现（至少部分？）是user32.lib，在需要链接的Project Properties里面一定要把Linker的
     Addtional Dependencies设置好（默认的Inherit就有了，但是我之前自己给修改没了）
@@ -18,6 +15,8 @@
     TODO:
     1. I/O
     2. Window Proc processes more message types
+
+    // ShowCursor(FALSE);
 */
 
 module;
@@ -72,23 +71,31 @@ Win32Window::Win32Window(uint32_t width, uint32_t height)
 
 bool Win32Window::Update() const
 {
-    MSG msg = { };
-
-    bool res;
-
-    if ( res = GetMessage(&msg, NULL, 0, 0) )
+    MSG msg{};
+    bool result;
+    if ( result = GetMessage(&msg, NULL, 0, 0))
     {
         TranslateMessage(&msg);
         DispatchMessage(&msg);
     }
-
-    return res;
+    return result;
 }
 
+// TODO: 对于不少Messages的处理最好是开一个thread，然后主线程继续执行，不然整个渲染就卡住了……
 LRESULT Win32Window::WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
     switch (uMsg)
     {
+        case WM_DESTROY:
+        {
+            PostQuitMessage(0);
+            return 0;
+        }
+        /*
+        
+        
+        
+
         case WM_PAINT:
         {
             PAINTSTRUCT ps;
@@ -101,7 +108,33 @@ LRESULT Win32Window::WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
             EndPaint(hwnd, &ps);
         }
         return 0;
+        case WM_SIZE:
+        {
+			//int width = LOWORD(lParam);  // Macro to get the low-order word.
+			//int height = HIWORD(lParam); // Macro to get the high-order word.
+
+			//// Respond to the message:
+			// Recreate the window(hwnd, (UINT)wParam, width, height);
+            break;
+        }
+        case WM_KEYDOWN:
+        {
+            break;
+        }
+		case WM_KEYUP:
+		{
+            // lParam bit 30 indicates the previous key flag, which is set to 1 for repeated key-down messages
+            
+			break;
+		}
+		case WM_CHAR:
+        {
+			break;
+        }
+
+        */
     }
+    // Default action for unhandled messages
 	return DefWindowProc(hwnd, uMsg, wParam, lParam);
 }
 

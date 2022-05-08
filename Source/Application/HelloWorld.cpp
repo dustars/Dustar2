@@ -18,6 +18,10 @@ import TinyVkRenderer;
 
 int main()
 {
+    //for () {
+    //    World.Update();
+    //    Renderer.Update();
+    //}
 	TinyVkRenderer renderer(800, 600);
 	renderer.Run();
 	return 0;

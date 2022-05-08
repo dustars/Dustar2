@@ -16,6 +16,8 @@
 #define VK_USE_PLATFORM_WIN32_KHR
 #define STB_IMAGE_IMPLEMENTATION
 
+#define RENDER_DOC_ENABLE
+
 module;
 #include <iostream>
 #include <fstream>
@@ -29,7 +31,9 @@ import RenderDocPlugin;
 TinyVkRenderer::TinyVkRenderer(uint32_t windowWidth, uint32_t windowHeight)
     : window(windowWidth, windowHeight), windowWidth(windowWidth), windowHeight(windowHeight)
 {
-    RenderDocWindowsInit((void*)&vkInstance, (void*)&window.GetHWDN());
+#ifdef RENDER_DOC_ENABLE
+    //RenderDocWindowsInit((void*)&vkInstance, (void*)&window.GetHWDN());
+#endif
 
     InitVulkanInstance();
     InitVulkanPhysicalDevices();
@@ -1246,7 +1250,7 @@ void TinyVkRenderer::CreateRenderPass()
 	subpassDes.pPreserveAttachments = nullptr;
 
     // Resources dependency between subpasses.
-    VkSubpassDependency subpassDen;
+	VkSubpassDependency subpassDen;
 	subpassDen.srcSubpass = VK_SUBPASS_EXTERNAL;
 	subpassDen.dstSubpass = 0;
 	subpassDen.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
@@ -1263,8 +1267,8 @@ void TinyVkRenderer::CreateRenderPass()
     createInfo.pAttachments = &attachmentDes;
     createInfo.subpassCount = 1;
 	createInfo.pSubpasses = &subpassDes;
-	createInfo.dependencyCount = 0;
-	createInfo.pDependencies = nullptr;
+	createInfo.dependencyCount = 1;
+	createInfo.pDependencies = &subpassDen;
 
 	if (VK_SUCCESS != vkCreateRenderPass(vkDevice, &createInfo, nullptr, &renderPass))
 	{

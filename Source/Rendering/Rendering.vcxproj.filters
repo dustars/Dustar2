@@ -24,9 +24,6 @@
     <ClCompile Include="WindowSystem\WindowSystem_Win32.ixx">
       <Filter>WindowSystem</Filter>
     </ClCompile>
-    <ClCompile Include="WindowSystem\WindowSystem_Xlib.ixx">
-      <Filter>WindowSystem</Filter>
-    </ClCompile>
     <ClCompile Include="TinyVkRenderer.ixx">
       <Filter>RenderBackedn</Filter>
     </ClCompile>

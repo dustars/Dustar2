@@ -10,15 +10,16 @@ namespace Window
 export class Win32Window : public WindowBase
 {
 public:
+	static LRESULT CALLBACK WindowProc(HWND hwnd,UINT uMsg, WPARAM wParam, LPARAM lParam);
+public:
 	Win32Window(uint32_t width, uint32_t height);
-	//void InitializeWindow() override;
-	bool Update()			const override;
+
+	bool Update() const override;
 
 	HINSTANCE& GetInstance() { return instance; }
 	HWND& GetHWDN() { return windowHandle; }
 
 private:
-	static LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
 	HINSTANCE instance;
 	HWND windowHandle;

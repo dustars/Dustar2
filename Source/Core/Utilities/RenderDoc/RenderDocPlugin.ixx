@@ -23,7 +23,7 @@ export void EndRenderDocCapture();
 
 export uint32_t GetCaptureNums();
 
-// 从UE那边抄过来的, 可以找到文件的目录……
+// 从UE那边抄过来的, 在注册表中找到文件的目录……
 bool QueryRegKey(const HKEY InKey, const TCHAR* InSubKey, const TCHAR* InValueName, std::wstring& OutData);
 
 RENDERDOC_API_1_5_0* rdoc_api = NULL;

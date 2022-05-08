@@ -106,7 +106,6 @@
     <ClCompile Include="WindowSystem\WindowSystem.ixx" />
     <ClCompile Include="WindowSystem\WindowSystem_Win32.cpp" />
     <ClCompile Include="WindowSystem\WindowSystem_Win32.ixx" />
-    <ClCompile Include="WindowSystem\WindowSystem_Xlib.ixx" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Core\Core.vcxproj">
