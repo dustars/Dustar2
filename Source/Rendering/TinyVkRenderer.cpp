@@ -374,7 +374,7 @@ uint32_t TinyVkRenderer::GetAvailableImage(uint64_t waitTimeNano)
     // TODO: 记得给这个参数,后续还要把Semaphore和Fence作为参数传进来
     // 或许不应该result image Index 不然switch case 里面不好 return
     uint32_t imageIndex = 0;
-    VkResult result = vkAcquireNextImageKHR(vkDevice, vkSwapChain, waitTimeNano, VK_NULL_HANDLE, VK_NULL_HANDLE, &imageIndex);
+    VkResult result = vkAcquireNextImageKHR(vkDevice, vkSwapChain, waitTimeNano, imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
     switch (result)
     {
     case VK_SUCCESS:
@@ -459,16 +459,18 @@ void TinyVkRenderer::EndCommandBuffer()
 
 void TinyVkRenderer::SubmitCommandBuffer()
 {
+    VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+
     VkSubmitInfo submitInfo;
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
     submitInfo.pNext = nullptr;
-    submitInfo.waitSemaphoreCount = 0;
-    submitInfo.pWaitSemaphores = nullptr;
-    submitInfo.pWaitDstStageMask = nullptr;
+    submitInfo.waitSemaphoreCount = 1;
+    submitInfo.pWaitSemaphores = &imageAvailableSemaphore;
+    submitInfo.pWaitDstStageMask = waitStages;
     submitInfo.commandBufferCount = 1;
     submitInfo.pCommandBuffers = &cmd;
-    submitInfo.signalSemaphoreCount = 0;
-    submitInfo.pSignalSemaphores = nullptr;
+	submitInfo.signalSemaphoreCount = 1;
+	submitInfo.pSignalSemaphores = &renderFinishedSemaphore;
 
     if (VK_SUCCESS != vkQueueSubmit(vkQueues[0], 1, &submitInfo, VK_NULL_HANDLE))
     {
@@ -811,7 +813,7 @@ void TinyVkRenderer::CreatePipelineCache()
 void TinyVkRenderer::InvertImageInit()
 {
     CreateSrcSampler();
-    CreateSrcImage("../Resources/worley.jpg");
+    CreateSrcImage("../../Resources/worley.jpg");
     CreateDstImage();
 
     CreateSrcImageView();
@@ -912,7 +914,8 @@ void TinyVkRenderer::CreateSrcImage(const std::string& filename)
 	int width, height, channels;
 	unsigned char* data = stbi_load(filename.data(), &width, &height, &channels, STBI_rgb_alpha);
 	// 试一下用一个Memory Object放两张图片，下面size可以用来作为第二张图的offset
-	// VkDeviceSize imageSize = static_cast<VkDeviceSize>(width * height * 3); // 24 bit
+	
+    VkDeviceSize imageSize = static_cast<VkDeviceSize>(width * height * 4); // 24 bit
 
 	// Create Image Object
 	VkImageCreateInfo createInfo;
@@ -952,7 +955,7 @@ void TinyVkRenderer::CreateSrcImage(const std::string& filename)
 	VkMemoryAllocateInfo allocInfo;
 	allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 	allocInfo.pNext = nullptr;
-	allocInfo.allocationSize = 1024 * 1024 * sizeof(float);
+	allocInfo.allocationSize = imageSize;
 	allocInfo.memoryTypeIndex = memoryIndex;
 
 	if (VK_SUCCESS != vkAllocateMemory(vkDevice, &allocInfo, nullptr, &srcMemory))
@@ -967,15 +970,15 @@ void TinyVkRenderer::CreateSrcImage(const std::string& filename)
 			throw std::runtime_error("Failed to Map Memory");
 		}
 
-        memcpy(mappedData, data, width * height * 32);
+        memcpy(mappedData, (void*)data, imageSize);
 
-		// Flush the memory so the device can actually use the image data.
 		VkMappedMemoryRange range;
 		range.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
 		range.pNext = nullptr;
 		range.memory = srcMemory;
 		range.offset = 0;
-		range.size = VK_WHOLE_SIZE;
+		range.size = imageSize;
+		// Flush the memory so the device can actually use the image data.
 		vkFlushMappedMemoryRanges(vkDevice, 1, &range);
 
 		vkUnmapMemory(vkDevice, srcMemory);
@@ -1086,6 +1089,7 @@ void TinyVkRenderer::PresentImageInit()
     InitWindowSurface();
     InitSwapChain();
 
+    CreateSynchronizationObjects();
     CreateVertexBuffer();
     CreatePresentImageView();
     CreateRenderPass();
@@ -1109,12 +1113,19 @@ void TinyVkRenderer::PresentImageClean()
 	{
 		vkDestroyImageView(vkDevice, presentImageViews[i], nullptr);
 	}
+    vkFreeMemory(vkDevice, vertexMemory, nullptr);
+    vkDestroyBuffer(vkDevice, vertexBuffer, nullptr);
+	vkDestroySemaphore(vkDevice, imageAvailableSemaphore, nullptr);
+	vkDestroySemaphore(vkDevice, renderFinishedSemaphore, nullptr);
+	vkDestroyFence(vkDevice, inFlightFence, nullptr);
     vkDestroySwapchainKHR(vkDevice, vkSwapChain, nullptr);
     vkDestroySurfaceKHR(vkInstance, vkSurface, nullptr);
 }
 
 void TinyVkRenderer::PresentImageRender()
 {
+    vkWaitForFences(vkDevice, 1, &inFlightFence, VK_TRUE, UINT64_MAX);
+    vkResetFences(vkDevice, 1, &inFlightFence);
     uint32_t imageIndex = GetAvailableImage(UINT64_MAX);
     //TODO: Present Loop
     BeginCommandBuffer();
@@ -1125,6 +1136,20 @@ void TinyVkRenderer::PresentImageRender()
 	SubmitCommandBuffer();
     // After submission, the rendering works are done. Now the image is ready for presentation.
     ImagePresentation(imageIndex);
+}
+
+void TinyVkRenderer::CreateSynchronizationObjects()
+{
+	VkSemaphoreCreateInfo semaphoreInfo{};
+	semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+	VkFenceCreateInfo fenceInfo{};
+	fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+    fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+	if (vkCreateSemaphore(vkDevice, &semaphoreInfo, nullptr, &imageAvailableSemaphore) != VK_SUCCESS ||
+		vkCreateSemaphore(vkDevice, &semaphoreInfo, nullptr, &renderFinishedSemaphore) != VK_SUCCESS ||
+		vkCreateFence(vkDevice, &fenceInfo, nullptr, &inFlightFence) != VK_SUCCESS) {
+		throw std::runtime_error("failed to create semaphores!");
+	}
 }
 
 void TinyVkRenderer::CreateVertexBuffer()
@@ -1162,14 +1187,14 @@ void TinyVkRenderer::CreateVertexBuffer()
 	allocInfo.allocationSize = 1024 * 1024 * sizeof(float);
 	allocInfo.memoryTypeIndex = memoryIndex;
 
-	if (VK_SUCCESS != vkAllocateMemory(vkDevice, &allocInfo, nullptr, &srcMemory))
+	if (VK_SUCCESS != vkAllocateMemory(vkDevice, &allocInfo, nullptr, &vertexMemory))
 	{
 		throw std::runtime_error("Failed to create device memory");
 	}
 
 	{ // Mapping
 		void* mappedData;
-		if (VK_SUCCESS != vkMapMemory(vkDevice, srcMemory, 0, VK_WHOLE_SIZE, 0, &mappedData))
+		if (VK_SUCCESS != vkMapMemory(vkDevice, vertexMemory, 0, VK_WHOLE_SIZE, 0, &mappedData))
 		{
 			throw std::runtime_error("Failed to Map Memory");
 		}
@@ -1180,16 +1205,16 @@ void TinyVkRenderer::CreateVertexBuffer()
 		VkMappedMemoryRange range;
 		range.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
 		range.pNext = nullptr;
-		range.memory = srcMemory;
+		range.memory = vertexMemory;
 		range.offset = 0;
 		range.size = VK_WHOLE_SIZE;
 		vkFlushMappedMemoryRanges(vkDevice, 1, &range);
 
-		vkUnmapMemory(vkDevice, srcMemory);
+		vkUnmapMemory(vkDevice, vertexMemory);
 	}
 
 	// Bind memory object and image object
-	if (VK_SUCCESS != vkBindBufferMemory(vkDevice, vertexBuffer, srcMemory, 0))
+	if (VK_SUCCESS != vkBindBufferMemory(vkDevice, vertexBuffer, vertexMemory, 0))
 	{
 		throw std::runtime_error("Failed to bind buffer and memory");
 	}
@@ -1247,13 +1272,13 @@ void TinyVkRenderer::CreateRenderPass()
 	subpassDes.pPreserveAttachments = nullptr;
 
     // Resources dependency between subpasses.
-	VkSubpassDependency subpassDen;
-	subpassDen.srcSubpass = VK_SUBPASS_EXTERNAL;
-	subpassDen.dstSubpass = 0;
-	subpassDen.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-	subpassDen.dstStageMask = 0;
-	subpassDen.srcAccessMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-	subpassDen.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+	//VkSubpassDependency subpassDen;
+	//subpassDen.srcSubpass = VK_SUBPASS_EXTERNAL;
+	//subpassDen.dstSubpass = 0;
+	//subpassDen.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	//subpassDen.dstStageMask = 0;
+	//subpassDen.srcAccessMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	//subpassDen.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 	//subpassDen.dependencyFlags = ?;
 
     VkRenderPassCreateInfo createInfo;
@@ -1264,8 +1289,8 @@ void TinyVkRenderer::CreateRenderPass()
     createInfo.pAttachments = &attachmentDes;
     createInfo.subpassCount = 1;
 	createInfo.pSubpasses = &subpassDes;
-	createInfo.dependencyCount = 1;
-	createInfo.pDependencies = &subpassDen;
+	createInfo.dependencyCount = 0;
+	createInfo.pDependencies = nullptr;
 
 	if (VK_SUCCESS != vkCreateRenderPass(vkDevice, &createInfo, nullptr, &renderPass))
 	{
@@ -1512,8 +1537,8 @@ void TinyVkRenderer::ImagePresentation(uint32_t imageIndex)
     VkPresentInfoKHR presentInfo;
 	presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 	presentInfo.pNext = nullptr;
-	presentInfo.waitSemaphoreCount = 0;
-	presentInfo.pWaitSemaphores = nullptr;
+	presentInfo.waitSemaphoreCount = 1;
+	presentInfo.pWaitSemaphores = &renderFinishedSemaphore;
 	presentInfo.swapchainCount = 1;
 	presentInfo.pSwapchains = &vkSwapChain;
 	presentInfo.pImageIndices = &imageIndex;

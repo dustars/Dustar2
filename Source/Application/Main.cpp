@@ -14,15 +14,12 @@
     3.
 */
 
-import TinyVkRenderer;
+import SimpleApplication;
 
 int main()
 {
-    //for () {
-    //    World.Update();
-    //    Renderer.Update();
-    //}
-	TinyVkRenderer renderer(800, 600);
-	renderer.Run();
+
+	SimpleApplication App(800, 600);
+    App.Run();
 	return 0;
 }

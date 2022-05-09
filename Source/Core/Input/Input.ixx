@@ -4,6 +4,9 @@
 
     Created Date:
     2022.5.8
+
+	Notes:
+	目前注册Input Callback的方式不够统一，而且调用的方式也千奇百怪……Lambda的类型是固定的，这一块还需要改进
 */
 
 export module Input;

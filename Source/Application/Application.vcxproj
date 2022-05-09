@@ -94,7 +94,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="HelloWorld.cpp" />
+    <ClCompile Include="Main.cpp" />
+    <ClCompile Include="SimpleApplication.ixx">
+      <SubType>
+      </SubType>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Rendering\Rendering.vcxproj">

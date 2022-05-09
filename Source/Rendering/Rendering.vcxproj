@@ -102,6 +102,39 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="RenderBackend\Device.ixx">
+      <SubType>
+      </SubType>
+    </ClCompile>
+    <ClCompile Include="RenderBackend\DX12\D3D12Device.ixx">
+      <SubType>
+      </SubType>
+    </ClCompile>
+    <ClCompile Include="RenderBackend\Pipeline.ixx">
+      <SubType>
+      </SubType>
+    </ClCompile>
+    <ClCompile Include="RenderBackend\PipelineGraphics.ixx">
+      <SubType>
+      </SubType>
+    </ClCompile>
+    <ClCompile Include="RenderBackend\Vulkan\VkDevice.ixx">
+      <SubType>
+      </SubType>
+    </ClCompile>
+    <ClCompile Include="RenderBackend\Vulkan\VkPipelineGraphics.ixx">
+      <SubType>
+      </SubType>
+    </ClCompile>
+    <ClCompile Include="RenderFeatures\MiddleRenderer.cpp" />
+    <ClCompile Include="RenderFeatures\MiddleRenderer.ixx">
+      <SubType>
+      </SubType>
+    </ClCompile>
+    <ClCompile Include="RenderFeatures\RendererBase.ixx">
+      <SubType>
+      </SubType>
+    </ClCompile>
     <ClCompile Include="TinyVkRenderer.cpp" />
     <ClCompile Include="TinyVkRenderer.ixx" />
     <ClCompile Include="WindowSystem\WindowSystem_WindowBase.ixx" />

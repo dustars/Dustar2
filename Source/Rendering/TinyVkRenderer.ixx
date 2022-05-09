@@ -160,15 +160,15 @@ private: //data
     };
 
     // 输出该图片
-    // TODO:
-    // 1. Vertex Buffer 没创建好（还得去弄导入一个数学库）
-    // 2. Commandbuffer，即渲染命令 还没搞好
-    // 3. Presentation 没搞好
     VkShaderModule vertShader;
     VkShaderModule fragShader;
 
     VkBuffer vertexBuffer;
+    VkDeviceMemory vertexMemory;
     std::vector<VkImageView> presentImageViews;
+    VkSemaphore imageAvailableSemaphore;
+    VkSemaphore renderFinishedSemaphore;
+    VkFence inFlightFence;
     VkRenderPass renderPass;
     std::vector<VkFramebuffer> framebuffers;
     VkPipelineLayout graphicsPipelineLayout;
@@ -177,6 +177,7 @@ private: //data
     void PresentImageClean();
     void PresentImageRender();
 
+    void CreateSynchronizationObjects();
     void CreateVertexBuffer();
     void CreatePresentImageView();
     void CreateRenderPass();
