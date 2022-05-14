@@ -19,7 +19,7 @@ import SimpleApplication;
 int main()
 {
 
-	SimpleApplication App(800, 600);
+	SimpleApplication App;
     App.Run();
 	return 0;
 }

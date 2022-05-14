@@ -11,14 +11,15 @@
 export module MiddleRenderer;
 
 import RendererBase;
+import RenderingBackend;
 
 export class MiddleRenderer : public RendererBase
 {
 public:
-	virtual void Init() override;
-	virtual void Render() override;
-	virtual void Update() override;
-private:
-    //Device 
+    MiddleRenderer(RB::RENDER_API renderAPI = RB::RENDER_API::VULKAN);
 
+	virtual void Init() final override;
+	virtual bool Update() final override;
+	virtual bool Render() final override;
+private:
 };

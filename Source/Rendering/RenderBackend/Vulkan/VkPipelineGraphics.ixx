@@ -10,11 +10,9 @@
 
 export module VkPipelineGraphics;
 
-import PipelineGraphics;
-
 namespace RB
 {
-class VulkanPipelineGraphics : public PipelineGraphics
+class VulkanPipelineGraphics
 {
 public:
     //??

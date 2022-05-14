@@ -10,37 +10,35 @@
 
 export module SimpleApplication;
 
-import TinyVkRenderer;
 import MiddleRenderer;
 import <stdint.h>;
 
 export class SimpleApplication
 {
 public:
-    SimpleApplication(uint32_t width, uint32_t height)
-        : renderer(width, height)
-        //, renderer(?)
+    SimpleApplication()
+        : renderer()
     {
-        //renderer.Init();
+        renderer.Init();
     }
     ~SimpleApplication() {}
 
     void Run()
     {
-        renderer.Run();
-        Update();
-        Render();
+        while (Update() && Render())
+        {
+            //Do something?限帧之类的?
+        }
     }
 
-    void Update()
+    bool Update()
     {
-        //renderer.Update();
+        return renderer.Update();
     }
-    void Render()
+    bool Render()
     {
-        //renderer.Render();
+        return renderer.Render();
     }
 private:
-    TinyVkRenderer renderer;
-    //MiddleRenderer renderer;
+    MiddleRenderer renderer;
 };

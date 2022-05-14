@@ -188,14 +188,4 @@ private: //data
     void CmdEndRenderPass();
     void CmdDraw();
     void ImagePresentation(uint32_t imageIndex);
-
-	/*********************************************************/
-    /*-----------------------Utilities-----------------------*/
-    /*********************************************************/
-    bool needCapture = true;
 };
-
-//class GraphicsPipeline : Pipeline {
-//	CreatePipeline();
-//	CreateResources(); ..
-//};

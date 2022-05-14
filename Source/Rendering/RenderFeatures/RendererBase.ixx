@@ -10,22 +10,42 @@
 
 export module RendererBase;
 
-import Device;
-import Pipeline;
+import RenderingBackend;
+import VkRenderingBackend;
 import <vector>;
 
 using namespace RB;
 
 export class RendererBase
 {
-    // 考考自己：是否可以不暴露渲染后端Device的情况下，在Derived Renderer class里完成渲染的构造？
-	Device device;
-	std::vector<Pipeline> pipelines;
 public:
     // Initialize Device with given API (Vulkan/DX12/Metal)
-    RendererBase();
+    RendererBase(RB::RENDER_API renderAPI = RB::RENDER_API::VULKAN)
+    {
+        if (renderAPI == RB::RENDER_API::VULKAN)
+        {
+            RBI = new VkRBInterface();
+        }
+        else if (renderAPI == RB::RENDER_API::D3D12)
+        {
+            // Output Error
+        }
+        else // Metal
+        {
+            // Output Error
+        }
+    }
+
+    ~RendererBase()
+    {
+        delete RBI;
+    }
 
     virtual void Init() = 0;
-    virtual void Render() = 0;
-    virtual void Update() = 0;
+    virtual bool Render() = 0;
+    virtual bool Update() = 0;
+
+protected:
+    // Rendering Backend
+    RBInterface* RBI;
 };

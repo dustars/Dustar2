@@ -102,27 +102,35 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="RenderBackend\Device.ixx">
+    <ClCompile Include="RenderBackend\RenderingBackend.ixx">
       <SubType>
       </SubType>
     </ClCompile>
-    <ClCompile Include="RenderBackend\DX12\D3D12Device.ixx">
+    <ClCompile Include="RenderBackend\Vulkan\VkCmdBuffer.cpp">
       <SubType>
       </SubType>
     </ClCompile>
-    <ClCompile Include="RenderBackend\Pipeline.ixx">
-      <SubType>
-      </SubType>
-    </ClCompile>
-    <ClCompile Include="RenderBackend\PipelineGraphics.ixx">
-      <SubType>
-      </SubType>
-    </ClCompile>
-    <ClCompile Include="RenderBackend\Vulkan\VkDevice.ixx">
+    <ClCompile Include="RenderBackend\Vulkan\VkCmdBuffer.ixx">
       <SubType>
       </SubType>
     </ClCompile>
     <ClCompile Include="RenderBackend\Vulkan\VkPipelineGraphics.ixx">
+      <SubType>
+      </SubType>
+    </ClCompile>
+    <ClCompile Include="RenderBackend\Vulkan\VkRenderingBackend.cpp">
+      <SubType>
+      </SubType>
+    </ClCompile>
+    <ClCompile Include="RenderBackend\Vulkan\VkRenderingBackend.ixx">
+      <SubType>
+      </SubType>
+    </ClCompile>
+    <ClCompile Include="RenderBackend\Vulkan\VkSurface.cpp">
+      <SubType>
+      </SubType>
+    </ClCompile>
+    <ClCompile Include="RenderBackend\Vulkan\VkSurface.ixx">
       <SubType>
       </SubType>
     </ClCompile>
@@ -135,8 +143,6 @@
       <SubType>
       </SubType>
     </ClCompile>
-    <ClCompile Include="TinyVkRenderer.cpp" />
-    <ClCompile Include="TinyVkRenderer.ixx" />
     <ClCompile Include="WindowSystem\WindowSystem_WindowBase.ixx" />
     <ClCompile Include="WindowSystem\WindowSystem.ixx" />
     <ClCompile Include="WindowSystem\WindowSystem_Win32.cpp" />

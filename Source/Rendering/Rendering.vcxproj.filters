@@ -24,21 +24,19 @@
     <ClCompile Include="WindowSystem\WindowSystem_Win32.ixx">
       <Filter>WindowSystem</Filter>
     </ClCompile>
-    <ClCompile Include="TinyVkRenderer.ixx">
-      <Filter>RenderBackedn</Filter>
-    </ClCompile>
     <ClCompile Include="WindowSystem\WindowSystem_WindowBase.ixx">
       <Filter>WindowSystem</Filter>
     </ClCompile>
-    <ClCompile Include="TinyVkRenderer.cpp" />
-    <ClCompile Include="RenderBackend\Pipeline.ixx" />
-    <ClCompile Include="RenderBackend\Device.ixx" />
-    <ClCompile Include="RenderBackend\PipelineGraphics.ixx" />
     <ClCompile Include="RenderFeatures\MiddleRenderer.ixx" />
     <ClCompile Include="RenderFeatures\MiddleRenderer.cpp" />
-    <ClCompile Include="RenderBackend\Vulkan\VkDevice.ixx" />
     <ClCompile Include="RenderBackend\Vulkan\VkPipelineGraphics.ixx" />
     <ClCompile Include="RenderFeatures\RendererBase.ixx" />
-    <ClCompile Include="RenderBackend\DX12\D3D12Device.ixx" />
+    <ClCompile Include="RenderBackend\RenderingBackend.ixx" />
+    <ClCompile Include="RenderBackend\Vulkan\VkRenderingBackend.ixx" />
+    <ClCompile Include="RenderBackend\Vulkan\VkRenderingBackend.cpp" />
+    <ClCompile Include="RenderBackend\Vulkan\VkSurface.ixx" />
+    <ClCompile Include="RenderBackend\Vulkan\VkSurface.cpp" />
+    <ClCompile Include="RenderBackend\Vulkan\VkCmdBuffer.ixx" />
+    <ClCompile Include="RenderBackend\Vulkan\VkCmdBuffer.cpp" />
   </ItemGroup>
 </Project>
