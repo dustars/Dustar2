@@ -40,12 +40,14 @@ public:
 	void InitSurface(VkInstance*, VkPhysicalDevice*, VkDevice*, uint32_t);
 	bool Update();
 
+	//为什么auto可以？？？
+	auto& GetHWDN() { return window.GetHWDN(); }
 	uint32_t GetAvailableImageIndex(uint64_t waitTimeNano, VkSemaphore sem, VkFence fence = VK_NULL_HANDLE) const; //从窗口系统获取一张可用的Image
 	VkImageView* GetAvailableImageView(uint32_t i) { return &presentImageViews[i]; }; //从窗口系统获取一张可用的Image
 	uint32_t GetNumImages() { return presentImageViews.size(); }
 	const VkSwapchainKHR& GetSwapChain() { return vkSwapChain; }
 	const VkFormat& GetFormat() { return swapChainImageFormat; }
-	const VkExtent2D& GetExtent() { return swapChainExtent; }
+	const VkExtent2D& GetExtent() const { return swapChainExtent; }
 
 private:
 	// Acquired after Vulkan initialization

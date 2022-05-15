@@ -12,6 +12,9 @@ module;
 
 module MiddleRenderer;
 
+import CmdBuffer;
+import Pipeline;
+
 MiddleRenderer::MiddleRenderer(RB::RENDER_API renderAPI)
     : RendererBase(renderAPI)
 {
@@ -19,25 +22,19 @@ MiddleRenderer::MiddleRenderer(RB::RENDER_API renderAPI)
 
 void MiddleRenderer::Init()
 {
-    // 配置资源
+	// 配置资源
     // RBI->CreateVertexBuffer();
-    // 
-    // 创建管线
-	// RBI->CreateGraphicsPipeline();
-    // 
-    // 添加Pass
-	/*RBI->CreateGraphicsPass(
-	[vertex, pipeline ? ? ? ](CommandBuffer cmd)
-	{
-		//绑定资源
-		cmd->BindVertexBuffer(vertex);
-		//绑定Pipeline
-		cmd->BindPipeline(pipeline)
-			//Draw
-			cmd->Draw();
-	});
-    
-    */
+    // RBI->CreateSRV();
+    // RBI->CreateUAV();
+    // RBI->CreateConstant();
+
+    RB::Pipeline& testPipeline = RBI->CreateGraphicsPipeline();
+
+	RBI->AddPass([&testPipeline](RB::CmdBuffer* cmd)
+		{
+			cmd->Draw(testPipeline);
+		}
+	);
 }
 
 bool MiddleRenderer::Update()

@@ -10,6 +10,9 @@ export module VkRenderingBackend;
 import RenderingBackend;
 import VkSurface;
 import VkCmdBuffer;
+import Pipeline;
+import VkGraphicsPipeline;
+import VkComputePipeline;
 import <vector>;
 import <string>;
 import <stdint.h>;
@@ -37,41 +40,18 @@ export class VkRBInterface : public RBInterface
 	VkSemaphore renderFinishedSemaphore;
 	VkFence inFlightFence;
 
-	// Temp
-	typedef struct Vertex
-	{
-		float x, y, z, w;
-		float u, v;
-	};
-	std::vector<Vertex> vertexData =
-	{
-		{0.f, 0.5f, 0.f, 1.f, 0.5f, 1.f},
-		{-0.5f, -0.5f, 0.f, 1.f, 0.f, 0.f},
-		{0.5f, -0.5f, 0.f, 1.f, 1.f, 0.f}
-	};
+	std::vector<VkGraphicsPipeline> testGraphicsPipeline;
+	std::vector<VkGraphicsPipeline> testComputePipelines;
 
-	VkBuffer vertexBuffer;
-	VkDeviceMemory vertexMemory;
-
-	// Graphics Pipeline
-	VkShaderModule vertShader;
-	VkShaderModule fragShader;
-	VkPipeline graphicsPipeline;
-
-	// RenderPass
-	VkRenderPass renderPass;
-	std::vector<VkFramebuffer> framebuffers;
-
-	// Layout
-	VkPipelineLayout graphicsPipelineLayout;
-	// Temp
-    
 public:
     VkRBInterface();
 	~VkRBInterface();
 
 	virtual bool Update() final override;
 	virtual bool Render() final override;
+
+	virtual Pipeline& CreateGraphicsPipeline() final override;
+	virtual Pipeline& CreateComputePipeline() final override;
 
 private:
 	// Initialization
@@ -90,14 +70,6 @@ private:
 
 	// Run time operations
 	void WindowPresentation(uint32_t imageIndex);
-
-	//Temp
-	void CreateShaderModule(const std::string& shaderFile, VkShaderModule& mod);
-	void CreateVertexBuffer();
-	void CreateRenderPass();
-	void CreateFramebuffer();
-	void CreateGraphicsPipeline();
-	uint32_t FindMemoryType(const VkMemoryRequirements& memoryRequirements, VkMemoryPropertyFlags requiredFlags, VkMemoryPropertyFlags preferredFlags);
 };
 
 } // namespace RB

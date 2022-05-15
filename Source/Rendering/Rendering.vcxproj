@@ -102,6 +102,14 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="RenderBackend\CmdBuffer.ixx">
+      <SubType>
+      </SubType>
+    </ClCompile>
+    <ClCompile Include="RenderBackend\Pipeline.ixx">
+      <SubType>
+      </SubType>
+    </ClCompile>
     <ClCompile Include="RenderBackend\RenderingBackend.ixx">
       <SubType>
       </SubType>
@@ -114,7 +122,15 @@
       <SubType>
       </SubType>
     </ClCompile>
-    <ClCompile Include="RenderBackend\Vulkan\VkPipelineGraphics.ixx">
+    <ClCompile Include="RenderBackend\Vulkan\VkComputePipeline.ixx">
+      <SubType>
+      </SubType>
+    </ClCompile>
+    <ClCompile Include="RenderBackend\Vulkan\VkGraphicsPipeline.cpp">
+      <SubType>
+      </SubType>
+    </ClCompile>
+    <ClCompile Include="RenderBackend\Vulkan\VkGraphicsPipeline.ixx">
       <SubType>
       </SubType>
     </ClCompile>

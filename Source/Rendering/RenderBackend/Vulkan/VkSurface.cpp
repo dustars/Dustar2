@@ -7,6 +7,7 @@
 
 	Notes:
 	暂时把 window 创建的宽高写死在 Constructor 的 Initialization list 中
+	暂时把RenderDoc插件放这里……（因为需要HWDN来激活）
 */
 
 module;

@@ -10,12 +10,16 @@
 
 export module VkCmdBuffer;
 
+import CmdBuffer;
+import Pipeline;
+import VkGraphicsPipeline;
+import VkComputePipeline;
 import <vulkan\vulkan.h>;
 
 namespace RB
 {
 
-export class VkCmdBuffer
+export class VkCmdBuffer : public CmdBuffer
 {
 	// Queue and Command Buffers
 	VkCommandPool vkCommandPool;
@@ -35,10 +39,10 @@ public:
 	void EndCommandBuffer();
 	void SubmitCommandBuffer(VkQueue, VkSemaphore, VkSemaphore);
 
-	void BeginRenderPass(VkFramebuffer, VkRenderPass, VkExtent2D);
+	void BeginRenderPass(const VkGraphicsPipeline&, uint32_t);
 	void EndRenderPass();
 
-	void Draw(VkBuffer, VkPipeline, uint32_t);
+	virtual void Draw(Pipeline&) final override;
 
 private:
 	void InitCommandPool(uint32_t);

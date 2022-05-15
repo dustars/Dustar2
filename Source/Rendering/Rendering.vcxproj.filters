@@ -29,7 +29,7 @@
     </ClCompile>
     <ClCompile Include="RenderFeatures\MiddleRenderer.ixx" />
     <ClCompile Include="RenderFeatures\MiddleRenderer.cpp" />
-    <ClCompile Include="RenderBackend\Vulkan\VkPipelineGraphics.ixx" />
+    <ClCompile Include="RenderBackend\Vulkan\VkGraphicsPipeline.ixx" />
     <ClCompile Include="RenderFeatures\RendererBase.ixx" />
     <ClCompile Include="RenderBackend\RenderingBackend.ixx" />
     <ClCompile Include="RenderBackend\Vulkan\VkRenderingBackend.ixx" />
@@ -38,5 +38,9 @@
     <ClCompile Include="RenderBackend\Vulkan\VkSurface.cpp" />
     <ClCompile Include="RenderBackend\Vulkan\VkCmdBuffer.ixx" />
     <ClCompile Include="RenderBackend\Vulkan\VkCmdBuffer.cpp" />
+    <ClCompile Include="RenderBackend\CmdBuffer.ixx" />
+    <ClCompile Include="RenderBackend\Vulkan\VkComputePipeline.ixx" />
+    <ClCompile Include="RenderBackend\Pipeline.ixx" />
+    <ClCompile Include="RenderBackend\Vulkan\VkGraphicsPipeline.cpp" />
   </ItemGroup>
 </Project>

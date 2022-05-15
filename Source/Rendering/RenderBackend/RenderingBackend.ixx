@@ -33,6 +33,11 @@
 
 export module RenderingBackend;
 
+import CmdBuffer;
+import Pipeline;
+import <functional>;
+import <vector>;
+
 namespace RB
 {
 
@@ -46,14 +51,21 @@ export enum class RENDER_API
 
 export class RBInterface
 {
+    typedef std::function<void(CmdBuffer* cmd)> CmdOps;
+    typedef std::vector<std::function<void(CmdBuffer* cmd)>> CmdOpsArray;
 public:
     virtual ~RBInterface() {}
 
-    virtual bool Update() = 0; //还不清楚具体的使用场景
-    virtual bool Render() = 0;
+	virtual bool Update() = 0; //还不清楚具体的使用场景
+	virtual bool Render() = 0;
 
-    //virtual void CreateGraphicsPipeline();
-    //virtual void CreateComputePipeline();
+    virtual Pipeline& CreateGraphicsPipeline() = 0;
+    virtual Pipeline& CreateComputePipeline() = 0;
+
+    void AddPass(CmdOps&& cmdOps)
+    {
+        renderingOps.push_back(move(cmdOps));
+    }
     //需要FrameBuffer
     //VS和FS
     //各种管线配置的状态
@@ -71,23 +83,9 @@ public:
     //virtual void CmdDrawIndex();
     //virtual void CmdDrawIndirect();
     //virtual void CmdMultiDrawIndirect();
+
 protected:
-    /*
-    lambdas[]
-
-    BeingCmd()
-    for(each lambda)
-    {
-        if (Graphics Pass) BeginRenderPass
-        lambda();
-        if (Graphics Pass) EndRenderPass
-    }
-    EndCmd()
-    
-    
-    */
-
-
+    CmdOpsArray renderingOps;
 };
 
 }

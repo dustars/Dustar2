@@ -71,16 +71,16 @@ void VkCmdBuffer::SubmitCommandBuffer(VkQueue queue, VkSemaphore waitS, VkSemaph
 	}
 }
 
-void VkCmdBuffer::BeginRenderPass(VkFramebuffer fb, VkRenderPass renderPass, VkExtent2D extent)
+void VkCmdBuffer::BeginRenderPass(const VkGraphicsPipeline& pipeline, uint32_t imageIndex)
 {
-	VkRect2D area = { {0,0},extent };
+	VkRect2D area = { {0,0}, pipeline.GetSurfaceRef().GetExtent() };
 	VkClearValue clearColor;
 	clearColor.color = { 1.0f, 0.f, 0.f, 1.f };
 	VkRenderPassBeginInfo beginInfo;
 	beginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 	beginInfo.pNext = nullptr;
-	beginInfo.renderPass = renderPass;
-	beginInfo.framebuffer = fb;
+	beginInfo.renderPass = pipeline.GetRenderPass();
+	beginInfo.framebuffer = pipeline.GetFrameBuffer(imageIndex);
 	beginInfo.renderArea = area;
 	beginInfo.clearValueCount = 1;
 	beginInfo.pClearValues = &clearColor;
@@ -93,14 +93,25 @@ void VkCmdBuffer::EndRenderPass()
 	vkCmdEndRenderPass(cmd);
 }
 
-void VkCmdBuffer::Draw(VkBuffer vb, VkPipeline pipeline, uint32_t size)
+void VkCmdBuffer::Draw(Pipeline& pipeline)
 {
-	VkDeviceSize offsets[] = { 0 };
-	vkCmdBindVertexBuffers(cmd, 0, 1, &vb, offsets);
+	if (PipelineType::Graphics == pipeline.GetType())
+	{
+		//dynamic_cast<VkGraphicsPipeline&>(pipeline);
+		VkDeviceSize offsets[] = { 0 };
+		vkCmdBindVertexBuffers(cmd, 0, 1, dynamic_cast<VkGraphicsPipeline&>(pipeline).GetVertexBufferPtr(), offsets);
 
-	vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+		vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, dynamic_cast<VkGraphicsPipeline&>(pipeline).GetPipeline());
 
-	vkCmdDraw(cmd, size, 1, 0, 0);
+		vkCmdDraw(cmd, dynamic_cast<VkGraphicsPipeline&>(pipeline).GetVertexDataSize(), 1, 0, 0);
+	}
+
+	if (PipelineType::Compute == pipeline.GetType())
+	{
+		//auto computePipeline = dynamic_cast<VkComputePipeline&>(pipeline);
+		//Dispatch
+	}
+
 }
 
 void VkCmdBuffer::InitCommandPool(uint32_t queueFamilyIndex)
