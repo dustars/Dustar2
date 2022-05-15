@@ -1,2 +1,2 @@
-H:\VisualStudioSolutions\Dustar2\Core\ShaderCompiler\DXC\bin\x64\dxc.exe -spirv -T cs_6_1 -E main H:\VisualStudioSolutions\Dustar2\Rendering\Shaders\Image.hlsl -Fo H:\VisualStudioSolutions\Dustar2\Rendering\Shaders\Image.spv
+..\..\Core\Utilities\ShaderCompiler\DXC\bin\x64\dxc.exe -spirv -T cs_6_1 -E main Image.hlsl -Fo Image.spv
 pause

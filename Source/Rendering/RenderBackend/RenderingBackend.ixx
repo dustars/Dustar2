@@ -8,24 +8,32 @@
     Notes:
     渲染后端，是Vulkan/D3D12/Metal三个现代图形API的抽象接口，为上层应用（目前主要是渲染器）
     提供各类简单创建接口，比如创建Pipeline，Buffer或Image等。
+
+	TODO:
+	1. 渲染资源模块 Resource?
+	2. Graphics Pipeline 各种state数据如何设定？
+	3. 渲染后端，智能CommandOps Lambda、Pipeline、RenderPass、Descriptor Set的调用框架
+	4. 模型加载模块得到的渲染数据如何处理？（Vertex Buffer、Material Data）
+	5. 创建一堆subPass和要用到的framebuffer(attachments) -> 自动处理依赖关系 -> 创建以RenderPass为单位的大循环结构（循环调用subpass，并Bind对应的pipeline)
+
+    6. Shader自动编译: 写好的hlsl运行时动态编译
     
-    我理想中的用法如下：
-    1. 创建一个渲染器。
-    2. 在渲染器中各种做各种渲染特性，封装成Pass，然后整个渲染就是很多Pass的排列。
-    3. 渲染器只负责创建如下资源：设置Pipeline的各种（根据图形/compute/RT划分），Shader Layout设定，
-       Buffer/Image资源，其实和现在主流的都非常像……
-    4. Pass是上层渲染管线的单个流程，其实并不和图形API有一一对应的概念（不是renderpass/subpass/GraphicsPipeline等）
-    5. 所有Pass创建好后，是由系统负责解析每个Pass该被拆分到对应API的哪些概念上。
+    我理想中对RBI的用法如下：
+    1. 创建一个渲染器，如 MiddleRenderer
+    2. 创建 Descriptor Layout (即该Pipeline会用到的各种资源)
+    3. 如果是Graphics Pipeline, 就创建 FrameBuffer (compute没有)
+    4. 将 Descriptor Layout 作为参数，创建 Pipeline 时传递
+    5. 调用RHI->AddSubPass，将一个lambda注册到待执行列表中
 
-    我感觉自己走入了一个误区：如果用一层抽象包括了vkDevice vkInstance这类的Object，就是
-    人为地制作一层屏障，让其他Vulkanobjects的创建非常不方便，这个问题如何解决呢？
+    一些想法:
+    Vulkan毕竟是错综复杂的，各个Object之间的创建互相依赖，这种天然的耦合让创建干净
+    的C++类封装成为不可能，所以合理地互相引用，析构Objects又如何保证顺序，这些是必
+    然要思考的问题
 
-    保证Interface就是个接口
-    编译C++后，接口不会产生任何*功能性*代码！
+    在上层渲染逻辑中经常提到的pass, 严格对应到API, Vulkan中重合度最大的概念应该是subPass和Pipeline的组合
 
-    参数问题？？
-
-
+    保证Interface就是个接口，即编译C++后，接口不会产生任何*功能性*代码！
+    
     在没有多线程命令录制之前，我永远都是vulkan的新手玩家
     在没有真正把同步引入之前，我永远都是vulkan的新手玩家
     在没有理解vulkan multithreading friendly之前，我永远都是vulkan的新手玩家
@@ -33,21 +41,15 @@
 
 export module RenderingBackend;
 
+import CommonAbstractionClass;
 import CmdBuffer;
 import Pipeline;
 import <functional>;
 import <vector>;
+import <string>;
 
 namespace RB
 {
-
-export enum class RENDER_API
-{
-    VULKAN,
-    D3D12,
-    METAL,
-    MAX
-};
 
 export class RBInterface
 {
@@ -59,8 +61,8 @@ public:
 	virtual bool Update() = 0; //还不清楚具体的使用场景
 	virtual bool Render() = 0;
 
-    virtual Pipeline& CreateGraphicsPipeline() = 0;
-    virtual Pipeline& CreateComputePipeline() = 0;
+    virtual Pipeline& CreateGraphicsPipeline(const ShaderArray&) = 0;
+    virtual Pipeline& CreateComputePipeline(const ShaderFile&) = 0;
 
     void AddPass(CmdOps&& cmdOps)
     {

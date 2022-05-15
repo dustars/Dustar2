@@ -21,7 +21,7 @@ namespace RB
 
 VkGraphicsPipeline::VkGraphicsPipeline() {}
 
-VkGraphicsPipeline::VkGraphicsPipeline(VkPhysicalDevice* pDev, VkDevice* dev, VkSurface* sur)
+VkGraphicsPipeline::VkGraphicsPipeline(VkPhysicalDevice* pDev, VkDevice* dev, VkSurface* sur, const ShaderArray& shaders)
 	: pDevicePtr(pDev)
 	, devicePtr(dev)
 	, surface(sur)
@@ -30,16 +30,15 @@ VkGraphicsPipeline::VkGraphicsPipeline(VkPhysicalDevice* pDev, VkDevice* dev, Vk
 	CreateFramebuffer();
 	// 这个要放外面可能
 	CreateVertexBuffer();
-	// 也应该是放在外面
-	std::string vert("../Rendering/Shaders/SimpleVertexShader.spv");
-	std::string frag("../Rendering/Shaders/SimpleFragmentShader.spv");
-	CreateGraphicsPipeline(vert, frag);
+	CreateShaderModule(shaders);
+	// Create Shaders, Vertex & Fragment Shaders must exist. Others are optional.
+	CreateGraphicsPipeline();
 }
 
 VkGraphicsPipeline::~VkGraphicsPipeline()
 {
 	vkDestroyRenderPass(*devicePtr, renderPass, nullptr);
-	for (size_t i = 0; i < framebuffers.size(); i++)
+	for (uint32_t i = 0; i < framebuffers.size(); i++)
 	{
 		vkDestroyFramebuffer(*devicePtr, framebuffers[i], nullptr);
 	}
@@ -47,39 +46,55 @@ VkGraphicsPipeline::~VkGraphicsPipeline()
 	vkFreeMemory(*devicePtr, vertexMemory, nullptr);
 	vkDestroyPipeline(*devicePtr, graphicsPipeline, nullptr);
 	vkDestroyPipelineLayout(*devicePtr, graphicsPipelineLayout, nullptr);
-	vkDestroyShaderModule(*devicePtr, vertShader, nullptr);
-	vkDestroyShaderModule(*devicePtr, fragShader, nullptr);
+	for (uint32_t i = 0; i < shaderModules.size(); i++)
+	{
+		vkDestroyShaderModule(*devicePtr, shaderModules[i].mod, nullptr);
+	}
 }
 
-void VkGraphicsPipeline::CreateShaderModule(const std::string& shaderFile, VkShaderModule& mod)
+void VkGraphicsPipeline::CreateShaderModule(const ShaderArray& shaders)
 {
-	if (shaderFile.empty()) return;
-
-	std::ifstream file(shaderFile, std::ios::ate | std::ios::binary);
-
-	if (!file.is_open()) {
-		throw std::runtime_error("failed to open file!");
-	}
-
-	size_t codeSize = (size_t)file.tellg();
-	std::vector<char> code(codeSize);
-
-	file.seekg(0);
-	file.read(code.data(), codeSize);
-	file.close();
-
-	VkShaderModuleCreateInfo createInfo =
+	for (uint32_t i = 0; i < shaders.size(); i++)
 	{
-		VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
-		nullptr,
-		0,
-		codeSize,
-		reinterpret_cast<const uint32_t*>(code.data())
-	};
+		VkShaderStageFlagBits shaderType;
+		switch (shaders[i].type)
+		{
+		case ShaderType::VS: {shaderType = VK_SHADER_STAGE_VERTEX_BIT; break;}
+		case ShaderType::FS: {shaderType = VK_SHADER_STAGE_FRAGMENT_BIT; break;}
+		case ShaderType::GS: {shaderType = VK_SHADER_STAGE_GEOMETRY_BIT; break;}
+		case ShaderType::TCS: {shaderType = VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT; break;}
+		case ShaderType::TES: {shaderType = VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT; break;}
+		}
+		shaderModules.emplace_back(VK_NULL_HANDLE, shaderType, shaders[i].entry.data());
 
-	if (VK_SUCCESS != vkCreateShaderModule(*devicePtr, &createInfo, nullptr, &mod))
-	{
-		throw std::runtime_error("Failed to create shader module");
+		if (shaders[i].shaderFile.empty()) return;
+
+		std::ifstream file(shaders[i].shaderFile, std::ios::ate | std::ios::binary);
+
+		if (!file.is_open()) {
+			throw std::runtime_error("failed to open file!");
+		}
+
+		size_t codeSize = (size_t)file.tellg();
+		std::vector<char> code(codeSize);
+
+		file.seekg(0);
+		file.read(code.data(), codeSize);
+		file.close();
+
+		VkShaderModuleCreateInfo createInfo =
+		{
+			VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
+			nullptr,
+			0,
+			codeSize,
+			reinterpret_cast<const uint32_t*>(code.data())
+		};
+
+		if (VK_SUCCESS != vkCreateShaderModule(*devicePtr, &createInfo, nullptr, &shaderModules[i].mod))
+		{
+			throw std::runtime_error("Failed to create shader module");
+		}
 	}
 }
 
@@ -232,39 +247,21 @@ void VkGraphicsPipeline::CreateVertexBuffer()
 	}
 }
 
-void VkGraphicsPipeline::CreateGraphicsPipeline(
-	const std::string& vert,
-	const std::string& frag,
-	const std::string& geom,
-	const std::string& ctrl,
-	const std::string& eval
-)
+void VkGraphicsPipeline::CreateGraphicsPipeline()
 {
-	CreateShaderModule(vert, vertShader);
-	CreateShaderModule(frag, fragShader);
-	CreateShaderModule(geom, fragShader);
-	CreateShaderModule(ctrl, fragShader);
-	CreateShaderModule(eval, fragShader);
-	std::vector<VkPipelineShaderStageCreateInfo> shaderCreateInfo;
-	shaderCreateInfo.emplace_back(
-		VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-		nullptr,
-		0,
-		VK_SHADER_STAGE_VERTEX_BIT,
-		vertShader,
-		"main",
-		nullptr
-	);
-
-	shaderCreateInfo.emplace_back(
-		VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-		nullptr,
-		0,
-		VK_SHADER_STAGE_FRAGMENT_BIT,
-		fragShader,
-		"main",
-		nullptr
-	);
+	std::vector<VkPipelineShaderStageCreateInfo> shaderCreateInfo{};
+	for (uint32_t i = 0; i < shaderModules.size(); i++)
+	{
+		shaderCreateInfo.emplace_back(
+			VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+			nullptr,
+			0,
+			shaderModules[i].type,
+			shaderModules[i].mod,
+			shaderModules[i].entryName,
+			nullptr
+		);
+	}
 
 	std::vector<VkVertexInputBindingDescription> bindings;
 	bindings.emplace_back(

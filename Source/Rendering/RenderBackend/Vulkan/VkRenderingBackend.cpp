@@ -8,7 +8,7 @@
 
 module;
 #define WINDOW_APP
-#define RENDER_DOC_ENABLE
+//#define RENDER_DOC_ENABLE
 #define VK_USE_PLATFORM_WIN32_KHR
 
 #include <stdexcept>
@@ -85,16 +85,17 @@ bool VkRBInterface::Render()
 	return true;
 }
 
-Pipeline& VkRBInterface::CreateGraphicsPipeline()
+Pipeline& VkRBInterface::CreateGraphicsPipeline(const ShaderArray& shaders)
 {
 	return dynamic_cast<Pipeline&>(testGraphicsPipeline.emplace_back(
 		&vkPhysicalDevice,
 		&vkDevice,
-		surface
+		surface,
+		shaders
 	));
 }
 
-Pipeline& VkRBInterface::CreateComputePipeline()
+Pipeline& VkRBInterface::CreateComputePipeline(const ShaderFile& computeShader)
 {
 	return dynamic_cast<Pipeline&>(testComputePipelines.emplace_back(
 	

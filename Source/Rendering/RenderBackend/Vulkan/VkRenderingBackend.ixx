@@ -7,6 +7,7 @@
 */
 export module VkRenderingBackend;
 
+import CommonAbstractionClass;
 import RenderingBackend;
 import VkSurface;
 import VkCmdBuffer;
@@ -50,8 +51,8 @@ public:
 	virtual bool Update() final override;
 	virtual bool Render() final override;
 
-	virtual Pipeline& CreateGraphicsPipeline() final override;
-	virtual Pipeline& CreateComputePipeline() final override;
+	virtual Pipeline& CreateGraphicsPipeline(const ShaderArray&) final override;
+	virtual Pipeline& CreateComputePipeline(const ShaderFile&) final override;
 
 private:
 	// Initialization

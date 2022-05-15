@@ -10,13 +10,14 @@
 
 export module MiddleRenderer;
 
+import CommonAbstractionClass;
 import RendererBase;
 import RenderingBackend;
 
 export class MiddleRenderer : public RendererBase
 {
 public:
-    MiddleRenderer(RB::RENDER_API renderAPI = RB::RENDER_API::VULKAN);
+    MiddleRenderer(RENDER_API renderAPI = RENDER_API::VULKAN);
 
 	virtual void Init() final override;
 	virtual bool Update() final override;

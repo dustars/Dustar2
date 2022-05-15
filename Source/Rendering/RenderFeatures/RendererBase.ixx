@@ -10,6 +10,7 @@
 
 export module RendererBase;
 
+import CommonAbstractionClass;
 import RenderingBackend;
 import VkRenderingBackend;
 import <vector>;
@@ -20,13 +21,13 @@ export class RendererBase
 {
 public:
     // Initialize Device with given API (Vulkan/DX12/Metal)
-    RendererBase(RB::RENDER_API renderAPI = RB::RENDER_API::VULKAN)
+    RendererBase(RENDER_API renderAPI = RENDER_API::VULKAN)
     {
-        if (renderAPI == RB::RENDER_API::VULKAN)
+        if (renderAPI == RENDER_API::VULKAN)
         {
             RBI = new VkRBInterface();
         }
-        else if (renderAPI == RB::RENDER_API::D3D12)
+        else if (renderAPI == RENDER_API::D3D12)
         {
             // Output Error
         }

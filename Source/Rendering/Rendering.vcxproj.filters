@@ -42,5 +42,6 @@
     <ClCompile Include="RenderBackend\Vulkan\VkComputePipeline.ixx" />
     <ClCompile Include="RenderBackend\Pipeline.ixx" />
     <ClCompile Include="RenderBackend\Vulkan\VkGraphicsPipeline.cpp" />
+    <ClCompile Include="RenderBackend\CommonAbstractionClass.ixx" />
   </ItemGroup>
 </Project>

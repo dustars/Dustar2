@@ -10,6 +10,7 @@
 
 export module VkGraphicsPipeline;
 
+import CommonAbstractionClass;
 import Pipeline;
 import VkSurface;
 import <vector>;
@@ -22,6 +23,22 @@ namespace RB
 
 export class VkGraphicsPipeline : public Pipeline
 {
+	// Vulkan Graphics Pipeline Object
+	VkPipeline graphicsPipeline;
+
+	struct ShaderInfo
+	{
+		VkShaderModule mod;
+		VkShaderStageFlagBits type;
+		const char* entryName;
+		ShaderInfo(VkShaderModule m, VkShaderStageFlagBits t, const char* n)
+			: mod(m), type(t), entryName(n)
+		{}
+	};
+	// Created Shaders
+	std::vector<ShaderInfo> shaderModules;
+
+	// Tempppppppppppppppppppppppppppppppp
 	typedef struct Vertex
 	{
 		float x, y, z, w;
@@ -38,11 +55,6 @@ export class VkGraphicsPipeline : public Pipeline
 	VkBuffer vertexBuffer;
 	VkDeviceMemory vertexMemory;
 
-	// Graphics Pipeline
-	VkShaderModule vertShader;
-	VkShaderModule fragShader;
-
-	VkPipeline graphicsPipeline;
 	// Layout
 	VkPipelineLayout graphicsPipelineLayout;
 
@@ -52,7 +64,7 @@ export class VkGraphicsPipeline : public Pipeline
 
 public:
 	VkGraphicsPipeline();
-	VkGraphicsPipeline(VkPhysicalDevice*, VkDevice*, VkSurface*);
+	VkGraphicsPipeline(VkPhysicalDevice*, VkDevice*, VkSurface*, const ShaderArray&);
 	~VkGraphicsPipeline();
 
     virtual PipelineType GetType() final override { return PipelineType::Graphics; }
@@ -73,16 +85,9 @@ private:
 	void CreateRenderPass();
 	void CreateFramebuffer();
 
-	void CreateShaderModule(const std::string& shaderFile, VkShaderModule& mod);
+	void CreateShaderModule(const ShaderArray&);
 	void CreateVertexBuffer();
-	void CreateGraphicsPipeline(
-		// Shaders
-		const std::string& vert,
-		const std::string& frag,
-		const std::string& geom = "",
-		const std::string& ctrl = "",
-		const std::string& eval = ""
-	);
+	void CreateGraphicsPipeline();
 	uint32_t FindMemoryType(const VkMemoryRequirements& memoryRequirements, VkMemoryPropertyFlags requiredFlags, VkMemoryPropertyFlags preferredFlags);
 };
 

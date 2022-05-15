@@ -15,7 +15,9 @@ module MiddleRenderer;
 import CmdBuffer;
 import Pipeline;
 
-MiddleRenderer::MiddleRenderer(RB::RENDER_API renderAPI)
+using namespace RB;
+
+MiddleRenderer::MiddleRenderer(RENDER_API renderAPI)
     : RendererBase(renderAPI)
 {
 }
@@ -28,9 +30,12 @@ void MiddleRenderer::Init()
     // RBI->CreateUAV();
     // RBI->CreateConstant();
 
-    RB::Pipeline& testPipeline = RBI->CreateGraphicsPipeline();
+	ShaderFile vert("../Rendering/Shaders/SimpleVertexShader.spv", "main", ShaderType::VS);
+	ShaderFile frag("../Rendering/Shaders/SimpleFragmentShader.spv", "mainPS", ShaderType::FS);
 
-	RBI->AddPass([&testPipeline](RB::CmdBuffer* cmd)
+	Pipeline& testPipeline = RBI->CreateGraphicsPipeline( ShaderArray{ vert, frag } );
+
+	RBI->AddPass([&testPipeline](CmdBuffer* cmd)
 		{
 			cmd->Draw(testPipeline);
 		}
