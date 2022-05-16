@@ -12,28 +12,34 @@ module;
 
 module MiddleRenderer;
 
+import Math;
 import CmdBuffer;
 import Pipeline;
+import RenderResource;
+import RenderResourceManager;
 
 using namespace RB;
 
 MiddleRenderer::MiddleRenderer(RENDER_API renderAPI)
     : RendererBase(renderAPI)
+	, camera(0, 0, Vector3(0.f, 1.f, 0.f))
 {
+	camera.SetProjMatrix(Matrix4::Perspective(1.0f, 10000.0f, 800.f / 400.f, 45.0f));
 }
 
 void MiddleRenderer::Init()
 {
-	// 配置资源
-    // RBI->CreateVertexBuffer();
-    // RBI->CreateSRV();
-    // RBI->CreateUAV();
-    // RBI->CreateConstant();
+	RenderResourceManager resourceManager(RBI);
+
+	ResourceLayout* layout = resourceManager.CreateResourceLayout();
+	layout->CreateConstantBuffer();
+
+	mat4 modelMatrix;
 
 	ShaderFile vert("../Rendering/Shaders/SimpleVertexShader.spv", "main", ShaderType::VS);
 	ShaderFile frag("../Rendering/Shaders/SimpleFragmentShader.spv", "mainPS", ShaderType::FS);
 
-	Pipeline& testPipeline = RBI->CreateGraphicsPipeline( ShaderArray{ vert, frag } );
+	Pipeline& testPipeline = RBI->CreateGraphicsPipeline( layout, ShaderArray{ vert, frag } );
 
 	RBI->AddPass([&testPipeline](CmdBuffer* cmd)
 		{

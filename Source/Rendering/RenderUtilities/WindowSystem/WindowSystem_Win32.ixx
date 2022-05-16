@@ -14,6 +14,7 @@
 export module WindowSystem:Win32;
 
 import :WindowBase;
+import Input;
 import <stdint.h>;
 import <Windows.h>;
 

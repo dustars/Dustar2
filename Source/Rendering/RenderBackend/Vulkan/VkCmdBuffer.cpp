@@ -97,7 +97,6 @@ void VkCmdBuffer::Draw(Pipeline& pipeline)
 {
 	if (PipelineType::Graphics == pipeline.GetType())
 	{
-		//dynamic_cast<VkGraphicsPipeline&>(pipeline);
 		VkDeviceSize offsets[] = { 0 };
 		vkCmdBindVertexBuffers(cmd, 0, 1, dynamic_cast<VkGraphicsPipeline&>(pipeline).GetVertexBufferPtr(), offsets);
 

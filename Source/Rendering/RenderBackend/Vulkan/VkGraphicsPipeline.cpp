@@ -21,10 +21,11 @@ namespace RB
 
 VkGraphicsPipeline::VkGraphicsPipeline() {}
 
-VkGraphicsPipeline::VkGraphicsPipeline(VkPhysicalDevice* pDev, VkDevice* dev, VkSurface* sur, const ShaderArray& shaders)
+VkGraphicsPipeline::VkGraphicsPipeline(VkPhysicalDevice* pDev, VkDevice* dev, VkSurface* sur, const VkResourceLayout* layout, const ShaderArray& shaders)
 	: pDevicePtr(pDev)
 	, devicePtr(dev)
 	, surface(sur)
+	, resourceLayout(const_cast<VkResourceLayout*>(layout))
 {
 	CreateRenderPass();
 	CreateFramebuffer();
@@ -45,7 +46,9 @@ VkGraphicsPipeline::~VkGraphicsPipeline()
 	vkDestroyBuffer(*devicePtr, vertexBuffer, nullptr);
 	vkFreeMemory(*devicePtr, vertexMemory, nullptr);
 	vkDestroyPipeline(*devicePtr, graphicsPipeline, nullptr);
-	vkDestroyPipelineLayout(*devicePtr, graphicsPipelineLayout, nullptr);
+	// 暂时由每个Pipeline负责删掉自己会用到的各种资源
+	resourceLayout->DestroyResource(*devicePtr);
+	delete resourceLayout; 
 	for (uint32_t i = 0; i < shaderModules.size(); i++)
 	{
 		vkDestroyShaderModule(*devicePtr, shaderModules[i].mod, nullptr);
@@ -356,21 +359,6 @@ void VkGraphicsPipeline::CreateGraphicsPipeline()
 	blendCreateInfo.blendConstants[2] = 0.0f; // Optional
 	blendCreateInfo.blendConstants[3] = 0.0f; // Optional
 
-	// 先创建一个空的Pipeline Layout
-	VkPipelineLayoutCreateInfo pipelineLayout;
-	pipelineLayout.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-	pipelineLayout.pNext = nullptr;
-	pipelineLayout.flags = 0;
-	pipelineLayout.setLayoutCount = 0; // Optional
-	pipelineLayout.pSetLayouts = nullptr; // Optional
-	pipelineLayout.pushConstantRangeCount = 0; // Optional
-	pipelineLayout.pPushConstantRanges = nullptr; // Optional
-
-	if (VK_SUCCESS != vkCreatePipelineLayout(*devicePtr, &pipelineLayout, nullptr, &graphicsPipelineLayout))
-	{
-		throw std::runtime_error("Failed to create Graphics Pipeline");
-	}
-
 	VkGraphicsPipelineCreateInfo pipelineCreateInfo;
 	pipelineCreateInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
 	pipelineCreateInfo.pNext = nullptr;
@@ -386,7 +374,7 @@ void VkGraphicsPipeline::CreateGraphicsPipeline()
 	pipelineCreateInfo.pDepthStencilState = nullptr;
 	pipelineCreateInfo.pColorBlendState = &blendCreateInfo;
 	pipelineCreateInfo.pDynamicState = nullptr;
-	pipelineCreateInfo.layout = graphicsPipelineLayout; //先渲染一个三角形出来吧……
+	pipelineCreateInfo.layout = resourceLayout->BuildPipelineLayout(*devicePtr);
 	pipelineCreateInfo.renderPass = renderPass;
 	pipelineCreateInfo.subpass = 0;
 	pipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE;

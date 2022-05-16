@@ -13,6 +13,7 @@ export module VkGraphicsPipeline;
 import CommonAbstractionClass;
 import Pipeline;
 import VkSurface;
+import VkRenderResource;
 import <vector>;
 import <string>;
 import <stdint.h>;
@@ -64,7 +65,7 @@ export class VkGraphicsPipeline : public Pipeline
 
 public:
 	VkGraphicsPipeline();
-	VkGraphicsPipeline(VkPhysicalDevice*, VkDevice*, VkSurface*, const ShaderArray&);
+	VkGraphicsPipeline(VkPhysicalDevice*, VkDevice*, VkSurface*, const VkResourceLayout*, const ShaderArray&);
 	~VkGraphicsPipeline();
 
     virtual PipelineType GetType() final override { return PipelineType::Graphics; }
@@ -80,6 +81,7 @@ private:
 	VkPhysicalDevice* pDevicePtr;
 	VkDevice* devicePtr;
 	VkSurface* surface;
+	VkResourceLayout* resourceLayout;
 
 	//Temp
 	void CreateRenderPass();

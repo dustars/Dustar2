@@ -13,6 +13,7 @@ export module MiddleRenderer;
 import CommonAbstractionClass;
 import RendererBase;
 import RenderingBackend;
+import Camera;
 
 export class MiddleRenderer : public RendererBase
 {
@@ -23,4 +24,5 @@ public:
 	virtual bool Update() final override;
 	virtual bool Render() final override;
 private:
+    Camera camera;
 };

@@ -46,12 +46,12 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
     <OutDir>$(SolutionDir)..\Build\$(Configuration)\Lib\</OutDir>
-    <IntDir>$(SolutionDir)..\Intermediate\$(Configuration)\</IntDir>
+    <IntDir>$(SolutionDir)..\Intermediate\$(ProjectName)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(SolutionDir)..\Build\$(Configuration)\Lib\</OutDir>
-    <IntDir>$(SolutionDir)..\Intermediate\$(Configuration)\</IntDir>
+    <IntDir>$(SolutionDir)..\Intermediate\$(ProjectName)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -120,6 +120,14 @@
       <SubType>
       </SubType>
     </ClCompile>
+    <ClCompile Include="RenderBackend\RenderResource.ixx">
+      <SubType>
+      </SubType>
+    </ClCompile>
+    <ClCompile Include="RenderBackend\RenderResourceManager.ixx">
+      <SubType>
+      </SubType>
+    </ClCompile>
     <ClCompile Include="RenderBackend\Vulkan\VkCmdBuffer.cpp">
       <SubType>
       </SubType>
@@ -148,6 +156,14 @@
       <SubType>
       </SubType>
     </ClCompile>
+    <ClCompile Include="RenderBackend\Vulkan\VkRenderResource.cpp">
+      <SubType>
+      </SubType>
+    </ClCompile>
+    <ClCompile Include="RenderBackend\Vulkan\VkRenderResource.ixx">
+      <SubType>
+      </SubType>
+    </ClCompile>
     <ClCompile Include="RenderBackend\Vulkan\VkSurface.cpp">
       <SubType>
       </SubType>
@@ -156,19 +172,27 @@
       <SubType>
       </SubType>
     </ClCompile>
-    <ClCompile Include="RenderFeatures\MiddleRenderer.cpp" />
-    <ClCompile Include="RenderFeatures\MiddleRenderer.ixx">
+    <ClCompile Include="Renderer\MiddleRenderer.cpp" />
+    <ClCompile Include="Renderer\MiddleRenderer.ixx">
       <SubType>
       </SubType>
     </ClCompile>
-    <ClCompile Include="RenderFeatures\RendererBase.ixx">
+    <ClCompile Include="Renderer\RendererBase.ixx">
       <SubType>
       </SubType>
     </ClCompile>
-    <ClCompile Include="WindowSystem\WindowSystem_WindowBase.ixx" />
-    <ClCompile Include="WindowSystem\WindowSystem.ixx" />
-    <ClCompile Include="WindowSystem\WindowSystem_Win32.cpp" />
-    <ClCompile Include="WindowSystem\WindowSystem_Win32.ixx" />
+    <ClCompile Include="RenderUtilities\Camera\Camera.cpp">
+      <SubType>
+      </SubType>
+    </ClCompile>
+    <ClCompile Include="RenderUtilities\Camera\Camera.ixx">
+      <SubType>
+      </SubType>
+    </ClCompile>
+    <ClCompile Include="RenderUtilities\WindowSystem\WindowSystem_WindowBase.ixx" />
+    <ClCompile Include="RenderUtilities\WindowSystem\WindowSystem.ixx" />
+    <ClCompile Include="RenderUtilities\WindowSystem\WindowSystem_Win32.cpp" />
+    <ClCompile Include="RenderUtilities\WindowSystem\WindowSystem_Win32.ixx" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Core\Core.vcxproj">

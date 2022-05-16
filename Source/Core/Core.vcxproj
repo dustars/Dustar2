@@ -16,10 +16,23 @@
     <ClCompile Include="Input\Bindings.ixx" />
     <ClCompile Include="Input\Keyboard.ixx" />
     <ClCompile Include="Input\Mouse.ixx" />
+    <ClCompile Include="Math\Math.ixx">
+      <SubType>
+      </SubType>
+    </ClCompile>
+    <ClCompile Include="Math\Simple\Matrix4.cpp" />
+    <ClCompile Include="Math\Simple\Quaternion.cpp" />
     <ClCompile Include="Utilities\RenderDoc\RenderDocPlugin.ixx" />
     <ClCompile Include="Utilities\TypeDefines.ixx" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Math\Simple\CommonOps.h" />
+    <ClInclude Include="Math\Simple\Math.h" />
+    <ClInclude Include="Math\Simple\Matrix4.h" />
+    <ClInclude Include="Math\Simple\Quaternion.h" />
+    <ClInclude Include="Math\Simple\Vector2.h" />
+    <ClInclude Include="Math\Simple\Vector3.h" />
+    <ClInclude Include="Math\Simple\Vector4.h" />
     <ClInclude Include="Utilities\RenderDoc\renderdoc_app.h" />
     <ClInclude Include="Utilities\stb\stb_image.h" />
     <ClInclude Include="Utilities\stb\stb_image_resize.h" />
@@ -61,12 +74,12 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
     <OutDir>$(SolutionDir)..\Build\$(Configuration)\Lib\</OutDir>
-    <IntDir>$(SolutionDir)..\Intermediate\$(Configuration)\</IntDir>
+    <IntDir>$(SolutionDir)..\Intermediate\$(ProjectName)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(SolutionDir)..\Build\$(Configuration)\Lib\</OutDir>
-    <IntDir>$(SolutionDir)..\Intermediate\$(Configuration)\</IntDir>
+    <IntDir>$(SolutionDir)..\Intermediate\$(ProjectName)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>

@@ -13,11 +13,21 @@
     <ClCompile Include="Input\Bindings.ixx" />
     <ClCompile Include="Input\Input.ixx" />
     <ClCompile Include="Input\Keyboard.ixx" />
+    <ClCompile Include="Math\Math.ixx" />
+    <ClCompile Include="Math\Simple\Matrix4.cpp" />
+    <ClCompile Include="Math\Simple\Quaternion.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Utilities\stb\stb_image.h" />
     <ClInclude Include="Utilities\stb\stb_image_resize.h" />
     <ClInclude Include="Utilities\stb\stb_image_write.h" />
     <ClInclude Include="Utilities\RenderDoc\renderdoc_app.h" />
+    <ClInclude Include="Math\Simple\Vector4.h" />
+    <ClInclude Include="Math\Simple\CommonOps.h" />
+    <ClInclude Include="Math\Simple\Math.h" />
+    <ClInclude Include="Math\Simple\Matrix4.h" />
+    <ClInclude Include="Math\Simple\Quaternion.h" />
+    <ClInclude Include="Math\Simple\Vector2.h" />
+    <ClInclude Include="Math\Simple\Vector3.h" />
   </ItemGroup>
 </Project>

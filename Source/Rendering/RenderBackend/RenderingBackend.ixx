@@ -37,6 +37,10 @@
     在没有多线程命令录制之前，我永远都是vulkan的新手玩家
     在没有真正把同步引入之前，我永远都是vulkan的新手玩家
     在没有理解vulkan multithreading friendly之前，我永远都是vulkan的新手玩家
+
+    资源:
+    ResourceLayout是代表了一个Pipeline会用到的所有资源，需要在创建Pipeline前定义好，然后
+    作为参数传递给Pipeline的创建函数。资源的类型、种类、数量会被自动统计，在渲染后端的
 */
 
 export module RenderingBackend;
@@ -44,6 +48,7 @@ export module RenderingBackend;
 import CommonAbstractionClass;
 import CmdBuffer;
 import Pipeline;
+import RenderResource;
 import <functional>;
 import <vector>;
 import <string>;
@@ -53,6 +58,8 @@ namespace RB
 
 export class RBInterface
 {
+    friend class RenderResourceManager;
+
     typedef std::function<void(CmdBuffer* cmd)> CmdOps;
     typedef std::vector<std::function<void(CmdBuffer* cmd)>> CmdOpsArray;
 public:
@@ -61,8 +68,8 @@ public:
 	virtual bool Update() = 0; //还不清楚具体的使用场景
 	virtual bool Render() = 0;
 
-    virtual Pipeline& CreateGraphicsPipeline(const ShaderArray&) = 0;
-    virtual Pipeline& CreateComputePipeline(const ShaderFile&) = 0;
+    virtual Pipeline& CreateGraphicsPipeline(const ResourceLayout*, const ShaderArray&) = 0;
+    virtual Pipeline& CreateComputePipeline(const ResourceLayout*, const ShaderFile&) = 0;
 
     void AddPass(CmdOps&& cmdOps)
     {
@@ -88,6 +95,9 @@ public:
 
 protected:
     CmdOpsArray renderingOps;
+
+	virtual void InitResources(const std::vector<ResourceLayout*>& layouts) = 0;
+	virtual ResourceLayout* CreateResourceLayout() = 0;
 };
 
 }

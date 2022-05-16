@@ -10,8 +10,6 @@ module;
 #include <stdexcept>
 module WindowSystem:Win32;
 
-import Input;
-
 namespace Window
 {
 

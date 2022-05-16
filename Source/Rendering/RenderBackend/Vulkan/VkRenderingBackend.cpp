@@ -85,21 +85,38 @@ bool VkRBInterface::Render()
 	return true;
 }
 
-Pipeline& VkRBInterface::CreateGraphicsPipeline(const ShaderArray& shaders)
+Pipeline& VkRBInterface::CreateGraphicsPipeline(const ResourceLayout* layout, const ShaderArray& shaders)
 {
 	return dynamic_cast<Pipeline&>(testGraphicsPipeline.emplace_back(
 		&vkPhysicalDevice,
 		&vkDevice,
 		surface,
+		dynamic_cast<const VkResourceLayout*>(layout),
 		shaders
 	));
 }
 
-Pipeline& VkRBInterface::CreateComputePipeline(const ShaderFile& computeShader)
+Pipeline& VkRBInterface::CreateComputePipeline(const ResourceLayout* layout, const ShaderFile& computeShader)
 {
 	return dynamic_cast<Pipeline&>(testComputePipelines.emplace_back(
 	
 	));
+}
+
+void VkRBInterface::InitResources(const std::vector<ResourceLayout*>& layouts)
+{
+	for (auto& layout : layouts)
+	{
+		// 统计出DescriptorPool需要的大小
+		// 针对每个layout分配descriptor set
+		// 创建每个layout会用到的image/buffer/views
+		// 绑定
+	}
+}
+ResourceLayout* VkRBInterface::CreateResourceLayout()
+{
+	// 后端创建, Manager删除
+	return new VkResourceLayout();
 }
 
 void VkRBInterface::InitVulkanInstance()

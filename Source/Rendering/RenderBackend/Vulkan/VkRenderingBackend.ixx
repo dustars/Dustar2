@@ -14,6 +14,8 @@ import VkCmdBuffer;
 import Pipeline;
 import VkGraphicsPipeline;
 import VkComputePipeline;
+import RenderResource;
+import VkRenderResource;
 import <vector>;
 import <string>;
 import <stdint.h>;
@@ -51,8 +53,12 @@ public:
 	virtual bool Update() final override;
 	virtual bool Render() final override;
 
-	virtual Pipeline& CreateGraphicsPipeline(const ShaderArray&) final override;
-	virtual Pipeline& CreateComputePipeline(const ShaderFile&) final override;
+	virtual Pipeline& CreateGraphicsPipeline(const ResourceLayout*, const ShaderArray&) final override;
+	virtual Pipeline& CreateComputePipeline(const ResourceLayout*, const ShaderFile&) final override;
+
+protected:
+	virtual void InitResources(const std::vector<ResourceLayout*>&) final override;
+	virtual ResourceLayout* CreateResourceLayout() final override;
 
 private:
 	// Initialization

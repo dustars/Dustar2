@@ -15,22 +15,22 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="WindowSystem\WindowSystem.ixx">
+    <ClCompile Include="RenderUtilities\WindowSystem\WindowSystem.ixx">
       <Filter>WindowSystem</Filter>
     </ClCompile>
-    <ClCompile Include="WindowSystem\WindowSystem_Win32.cpp">
+    <ClCompile Include="RenderUtilities\WindowSystem\WindowSystem_Win32.cpp">
       <Filter>WindowSystem</Filter>
     </ClCompile>
-    <ClCompile Include="WindowSystem\WindowSystem_Win32.ixx">
+    <ClCompile Include="RenderUtilities\WindowSystem\WindowSystem_Win32.ixx">
       <Filter>WindowSystem</Filter>
     </ClCompile>
-    <ClCompile Include="WindowSystem\WindowSystem_WindowBase.ixx">
+    <ClCompile Include="RenderUtilities\WindowSystem\WindowSystem_WindowBase.ixx">
       <Filter>WindowSystem</Filter>
     </ClCompile>
-    <ClCompile Include="RenderFeatures\MiddleRenderer.ixx" />
-    <ClCompile Include="RenderFeatures\MiddleRenderer.cpp" />
+    <ClCompile Include="Renderer\MiddleRenderer.ixx" />
+    <ClCompile Include="Renderer\MiddleRenderer.cpp" />
     <ClCompile Include="RenderBackend\Vulkan\VkGraphicsPipeline.ixx" />
-    <ClCompile Include="RenderFeatures\RendererBase.ixx" />
+    <ClCompile Include="Renderer\RendererBase.ixx" />
     <ClCompile Include="RenderBackend\RenderingBackend.ixx" />
     <ClCompile Include="RenderBackend\Vulkan\VkRenderingBackend.ixx" />
     <ClCompile Include="RenderBackend\Vulkan\VkRenderingBackend.cpp" />
@@ -43,5 +43,11 @@
     <ClCompile Include="RenderBackend\Pipeline.ixx" />
     <ClCompile Include="RenderBackend\Vulkan\VkGraphicsPipeline.cpp" />
     <ClCompile Include="RenderBackend\CommonAbstractionClass.ixx" />
+    <ClCompile Include="RenderUtilities\Camera\Camera.ixx" />
+    <ClCompile Include="RenderUtilities\Camera\Camera.cpp" />
+    <ClCompile Include="RenderBackend\RenderResource.ixx" />
+    <ClCompile Include="RenderBackend\Vulkan\VkRenderResource.ixx" />
+    <ClCompile Include="RenderBackend\RenderResourceManager.ixx" />
+    <ClCompile Include="RenderBackend\Vulkan\VkRenderResource.cpp" />
   </ItemGroup>
 </Project>
