@@ -31,10 +31,13 @@ void MiddleRenderer::Init()
 {
 	RenderResourceManager resourceManager(RBI);
 
-	ResourceLayout* layout = resourceManager.CreateResourceLayout();
-	layout->CreateConstantBuffer();
-
+	//
 	mat4 modelMatrix;
+	mat4 mvp = camera.GetProjMatrix() * camera.BuildViewMatrix() * modelMatrix;
+	//
+
+	ResourceLayout* layout = resourceManager.CreateResourceLayout();
+	layout->CreateConstantBuffer("MVPMatrix", sizeof(mat4), sizeof(mat4) * 3, mvp.values);
 
 	ShaderFile vert("../Rendering/Shaders/SimpleVertexShader.spv", "main", ShaderType::VS);
 	ShaderFile frag("../Rendering/Shaders/SimpleFragmentShader.spv", "mainPS", ShaderType::FS);

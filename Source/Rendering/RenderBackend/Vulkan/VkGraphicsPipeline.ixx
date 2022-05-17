@@ -76,6 +76,9 @@ public:
 	const VkSurface& GetSurfaceRef() const{ return *surface; }
 	const VkFramebuffer& GetFrameBuffer(uint32_t i) const { return framebuffers[i]; }
 	const VkRenderPass& GetRenderPass() const { return renderPass; }
+
+	VkPipelineLayout GetPipelineLayout() { return resourceLayout->GetPipelineLayout(); }
+	const VkDescriptorSet* GetDescriptorSet() { return resourceLayout->GetDescriptorSet(); }
 private:
 	// Temp References
 	VkPhysicalDevice* pDevicePtr;
@@ -90,7 +93,6 @@ private:
 	void CreateShaderModule(const ShaderArray&);
 	void CreateVertexBuffer();
 	void CreateGraphicsPipeline();
-	uint32_t FindMemoryType(const VkMemoryRequirements& memoryRequirements, VkMemoryPropertyFlags requiredFlags, VkMemoryPropertyFlags preferredFlags);
 };
 
 

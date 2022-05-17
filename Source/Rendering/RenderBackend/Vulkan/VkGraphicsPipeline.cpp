@@ -47,7 +47,6 @@ VkGraphicsPipeline::~VkGraphicsPipeline()
 	vkFreeMemory(*devicePtr, vertexMemory, nullptr);
 	vkDestroyPipeline(*devicePtr, graphicsPipeline, nullptr);
 	// 暂时由每个Pipeline负责删掉自己会用到的各种资源
-	resourceLayout->DestroyResource(*devicePtr);
 	delete resourceLayout; 
 	for (uint32_t i = 0; i < shaderModules.size(); i++)
 	{
@@ -204,7 +203,8 @@ void VkGraphicsPipeline::CreateVertexBuffer()
 	vkGetBufferMemoryRequirements(*devicePtr, vertexBuffer, &memoryRequirements);
 
 	// Find Suitable Memory Type
-	uint32_t memoryIndex = FindMemoryType(
+	uint32_t memoryIndex = VkResourceLayout::FindMemoryType(
+		*pDevicePtr,
 		memoryRequirements,
 		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
 		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
@@ -374,7 +374,7 @@ void VkGraphicsPipeline::CreateGraphicsPipeline()
 	pipelineCreateInfo.pDepthStencilState = nullptr;
 	pipelineCreateInfo.pColorBlendState = &blendCreateInfo;
 	pipelineCreateInfo.pDynamicState = nullptr;
-	pipelineCreateInfo.layout = resourceLayout->BuildPipelineLayout(*devicePtr);
+	pipelineCreateInfo.layout = resourceLayout->BuildPipelineLayout();
 	pipelineCreateInfo.renderPass = renderPass;
 	pipelineCreateInfo.subpass = 0;
 	pipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE;
@@ -384,47 +384,6 @@ void VkGraphicsPipeline::CreateGraphicsPipeline()
 	{
 		throw std::runtime_error("Failed to create Graphics Pipeline");
 	}
-}
-
-uint32_t VkGraphicsPipeline::FindMemoryType(const VkMemoryRequirements& memoryRequirements, VkMemoryPropertyFlags requiredFlags, VkMemoryPropertyFlags preferredFlags)
-{
-	VkPhysicalDeviceMemoryProperties memoryProperties;
-	vkGetPhysicalDeviceMemoryProperties(*pDevicePtr, &memoryProperties);
-
-	uint32_t selectedType = ~0u;
-	uint32_t memoryType;
-
-	for (memoryType = 0; memoryType < 32; memoryType++) {
-		if (memoryRequirements.memoryTypeBits & (1 << memoryType))
-		{
-			const VkMemoryType& type = memoryProperties.memoryTypes[memoryType];
-
-			if ((type.propertyFlags & preferredFlags) == preferredFlags)
-			{
-				selectedType = memoryType;
-				break;
-			}
-		}
-	}
-
-	if (selectedType != ~0u)
-	{
-		for (memoryType = 0; memoryType < 32; memoryType++)
-		{
-			if (memoryRequirements.memoryTypeBits & (1 << memoryType))
-			{
-				const VkMemoryType& type = memoryProperties.memoryTypes[memoryType];
-
-				if ((type.propertyFlags & requiredFlags) == requiredFlags)
-				{
-					selectedType = memoryType;
-					break;
-				}
-			}
-		}
-	}
-
-	return selectedType;
 }
 
 } //namespace RB

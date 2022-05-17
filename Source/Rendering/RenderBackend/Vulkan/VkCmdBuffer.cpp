@@ -95,9 +95,18 @@ void VkCmdBuffer::EndRenderPass()
 
 void VkCmdBuffer::Draw(Pipeline& pipeline)
 {
+
 	if (PipelineType::Graphics == pipeline.GetType())
 	{
 		VkDeviceSize offsets[] = { 0 };
+
+		auto* setPtr = dynamic_cast<VkGraphicsPipeline&>(pipeline).GetDescriptorSet();
+
+		vkCmdBindDescriptorSets(
+			cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, dynamic_cast<VkGraphicsPipeline&>(pipeline).GetPipelineLayout(),
+			0, 1, setPtr, // Descriptor
+			0, nullptr);
+
 		vkCmdBindVertexBuffers(cmd, 0, 1, dynamic_cast<VkGraphicsPipeline&>(pipeline).GetVertexBufferPtr(), offsets);
 
 		vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, dynamic_cast<VkGraphicsPipeline&>(pipeline).GetPipeline());

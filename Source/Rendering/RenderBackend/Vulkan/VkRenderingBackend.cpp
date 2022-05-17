@@ -8,7 +8,7 @@
 
 module;
 #define WINDOW_APP
-//#define RENDER_DOC_ENABLE
+#define RENDER_DOC_ENABLE
 #define VK_USE_PLATFORM_WIN32_KHR
 
 #include <stdexcept>
@@ -105,18 +105,19 @@ Pipeline& VkRBInterface::CreateComputePipeline(const ResourceLayout* layout, con
 
 void VkRBInterface::InitResources(const std::vector<ResourceLayout*>& layouts)
 {
+	VkResourceLayout::CreateDescriptorPool(vkDevice);
+	VkResourceLayout::CreateResources(vkDevice, vkPhysicalDevice);
 	for (auto& layout : layouts)
 	{
-		// 统计出DescriptorPool需要的大小
-		// 针对每个layout分配descriptor set
-		// 创建每个layout会用到的image/buffer/views
-		// 绑定
+		dynamic_cast<VkResourceLayout*>(layout)->AllocateDescriptorSet();
+		dynamic_cast<VkResourceLayout*>(layout)->UpdateDescriptorSet();
 	}
 }
+
 ResourceLayout* VkRBInterface::CreateResourceLayout()
 {
 	// 后端创建, Manager删除
-	return new VkResourceLayout();
+	return new VkResourceLayout(vkDevice);
 }
 
 void VkRBInterface::InitVulkanInstance()

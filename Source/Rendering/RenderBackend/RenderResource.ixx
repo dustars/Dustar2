@@ -10,6 +10,9 @@
 
 export module RenderResource;
 
+import <string>;
+import <stdint.h>;
+
 namespace RB
 {
 
@@ -34,11 +37,11 @@ export class ResourceLayout
 public:
     virtual ~ResourceLayout() {}
 
-	virtual void CreateConstantBuffer() = 0;
-	//virtual void CreateVertexBuffer();
-	//virtual void CreateSRV();
-	//virtual void CreateUAV();
-	//virtual void CreateConstant();
+	virtual void CreateConstantBuffer(const std::string&, uint32_t stride, uint32_t size, void* initData = nullptr) = 0;
+	//virtual void CreateVertexBuffer(const std::string&, uint32_t stride, uint32_t size, void* initData = nullptr);
+	//virtual void CreateSRV(const std::string&, uint32_t stride, uint32_t size, void* initData = nullptr);
+	//virtual void CreateUAV(const std::string&, uint32_t stride, uint32_t size, void* initData = nullptr);
+	//virtual void CreateConstant(const std::string&, uint32_t size, void* initData = nullptr);
 };
 
 }
