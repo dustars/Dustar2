@@ -103,6 +103,9 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Core\Core.vcxproj">
+      <Project>{4d057191-e921-477a-8a9b-ce2bf821228d}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\Rendering\Rendering.vcxproj">
       <Project>{d0b0fa8f-d0e1-435d-9ee2-169f795a7efa}</Project>
     </ProjectReference>

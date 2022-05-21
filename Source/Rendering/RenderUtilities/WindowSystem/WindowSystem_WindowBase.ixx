@@ -18,7 +18,7 @@ export class WindowBase
 public:
 
 	//virtual void InitializeWindow() = 0;
-	virtual bool Update()			const = 0;
+	virtual bool Update(float)			const = 0;
 };
 
 }// namespace Window

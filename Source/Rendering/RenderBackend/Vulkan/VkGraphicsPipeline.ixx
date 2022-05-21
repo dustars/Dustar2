@@ -14,6 +14,7 @@ import CommonAbstractionClass;
 import Pipeline;
 import VkSurface;
 import VkRenderResource;
+import Model;
 import <vector>;
 import <string>;
 import <stdint.h>;
@@ -39,26 +40,6 @@ export class VkGraphicsPipeline : public Pipeline
 	// Created Shaders
 	std::vector<ShaderInfo> shaderModules;
 
-	// Tempppppppppppppppppppppppppppppppp
-	typedef struct Vertex
-	{
-		float x, y, z, w;
-		float u, v;
-	};
-
-	std::vector<Vertex> vertexData =
-	{
-		{0.f, 0.5f, 0.f, 1.f, 0.5f, 1.f},
-		{-0.5f, -0.5f, 0.f, 1.f, 0.f, 0.f},
-		{0.5f, -0.5f, 0.f, 1.f, 1.f, 0.f}
-	};
-
-	VkBuffer vertexBuffer;
-	VkDeviceMemory vertexMemory;
-
-	// Layout
-	VkPipelineLayout graphicsPipelineLayout;
-
 	// RenderPass
 	VkRenderPass renderPass;
 	std::vector<VkFramebuffer> framebuffers;
@@ -71,14 +52,23 @@ public:
     virtual PipelineType GetType() final override { return PipelineType::Graphics; }
 
 	VkPipeline GetPipeline() { return graphicsPipeline; }
-	VkBuffer* GetVertexBufferPtr() { return &vertexBuffer; }
-	uint32_t GetVertexDataSize() { return vertexData.size(); }
+
 	const VkSurface& GetSurfaceRef() const{ return *surface; }
 	const VkFramebuffer& GetFrameBuffer(uint32_t i) const { return framebuffers[i]; }
 	const VkRenderPass& GetRenderPass() const { return renderPass; }
 
 	VkPipelineLayout GetPipelineLayout() { return resourceLayout->GetPipelineLayout(); }
 	const VkDescriptorSet* GetDescriptorSet() { return resourceLayout->GetDescriptorSet(); }
+
+	uint32_t GetPushConstantsSize() { return resourceLayout->GetPushConstantsSize(); }
+	void* SetPushConstant(uint32_t i, VkShaderStageFlags& s, uint32_t& size)
+		{ return resourceLayout->SetPushConstant(i, s, size); }
+
+	// Model
+	const VkBuffer* GetVertexBufferPtr() { return resourceLayout->GetVertexBufferPtr(); }
+	const VkBuffer* GetIndexBufferPtr() { return resourceLayout->GetIndexBufferPtr(); }
+	uint32_t GetVertexCount() { return resourceLayout->GetVertexCount(); }
+	uint32_t GetIndexCount() { return resourceLayout->GetIndexCount(); }
 private:
 	// Temp References
 	VkPhysicalDevice* pDevicePtr;
@@ -91,7 +81,6 @@ private:
 	void CreateFramebuffer();
 
 	void CreateShaderModule(const ShaderArray&);
-	void CreateVertexBuffer();
 	void CreateGraphicsPipeline();
 };
 

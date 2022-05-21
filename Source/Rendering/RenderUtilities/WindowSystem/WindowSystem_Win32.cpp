@@ -8,6 +8,8 @@
 
 module;
 #include <stdexcept>
+#include <sstream>
+#include <windowsx.h>
 module WindowSystem:Win32;
 
 namespace Window
@@ -37,7 +39,7 @@ Win32Window::Win32Window(uint32_t width, uint32_t height)
 	windowHandle = CreateWindowEx(
         0,                              // Optional window styles.
         CLASS_NAME,                     // Window class
-        L"Dustars v2.0",                // Window text
+        L"Dustar2",                // Window text
         WS_OVERLAPPEDWINDOW|WS_VISIBLE,            // Window style
 
         centerX - width/2, centerY - height/2,      //Window position
@@ -52,10 +54,13 @@ Win32Window::Win32Window(uint32_t width, uint32_t height)
     if(!windowHandle) throw std::runtime_error("Cannot Create Window");
 }
 
-bool Win32Window::Update() const
+bool Win32Window::Update(float ms) const
 {
-    MSG msg{};
+	std::wstringstream wss;
+    wss << L"Dustars2   FPS:" << int(1000.f/ms);
+    SetWindowText(windowHandle, wss.str().c_str());
 
+    MSG msg{};
     if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
     {
         TranslateMessage(&msg);
@@ -91,8 +96,9 @@ LRESULT Win32Window::WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
         }
         case WM_MOUSEMOVE:
         {
-			//int xPos = GET_X_LPARAM(lParam);
-			//int yPos = GET_Y_LPARAM(lParam);
+			int xPos = GET_X_LPARAM(lParam);
+			int yPos = GET_Y_LPARAM(lParam);
+            Input::InputManager::UpdateMouse(float(xPos), float(yPos));
             return 0;
         }
         case WM_LBUTTONDOWN:

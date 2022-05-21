@@ -28,7 +28,7 @@ public:
 public:
 	Win32Window(uint32_t width, uint32_t height);
 
-	bool Update() const override;
+	virtual bool Update(float) const final override;
 
 	HINSTANCE& GetInstance() { return instance; }
 	HWND& GetHWDN() { return windowHandle; }

@@ -20,7 +20,7 @@ export class Camera
 	mat4	projMatrix;
 
 public:
-	Camera(float pitch = 0, float yaw = 360, float3 position = float3(0, 0, 0));
+	Camera(float pitch = 0, float yaw = 0, float3 position = float3(0, 0, 0));
 	~Camera(void) {};
 
 	void UpdateCamera(float msec);

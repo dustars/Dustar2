@@ -12,6 +12,10 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Core.ixx" />
+    <ClCompile Include="Data\Model.ixx">
+      <SubType>
+      </SubType>
+    </ClCompile>
     <ClCompile Include="Input\Input.ixx" />
     <ClCompile Include="Input\Bindings.ixx" />
     <ClCompile Include="Input\Keyboard.ixx" />
@@ -23,6 +27,10 @@
     <ClCompile Include="Math\Simple\Matrix4.cpp" />
     <ClCompile Include="Math\Simple\Quaternion.cpp" />
     <ClCompile Include="Utilities\RenderDoc\RenderDocPlugin.ixx" />
+    <ClCompile Include="Utilities\Timer.ixx">
+      <SubType>
+      </SubType>
+    </ClCompile>
     <ClCompile Include="Utilities\TypeDefines.ixx" />
   </ItemGroup>
   <ItemGroup>

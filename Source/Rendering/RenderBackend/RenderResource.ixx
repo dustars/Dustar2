@@ -10,6 +10,7 @@
 
 export module RenderResource;
 
+import Model;
 import <string>;
 import <stdint.h>;
 
@@ -37,6 +38,8 @@ export class ResourceLayout
 public:
     virtual ~ResourceLayout() {}
 
+    virtual void CreateModelData(const Model&) = 0;
+	virtual void CreatePushContant(const std::string&, uint32_t size, void* initData = nullptr) = 0;
 	virtual void CreateConstantBuffer(const std::string&, uint32_t stride, uint32_t size, void* initData = nullptr) = 0;
 	//virtual void CreateVertexBuffer(const std::string&, uint32_t stride, uint32_t size, void* initData = nullptr);
 	//virtual void CreateSRV(const std::string&, uint32_t stride, uint32_t size, void* initData = nullptr);

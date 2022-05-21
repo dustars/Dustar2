@@ -49,9 +49,20 @@ public:
 	}
 
 	static void UpdateMouse(MouseBindings binding) { currentBinding = binding ;}
+	static void UpdateMouse(float newX, float newY)
+	{ 
+		offX = posX - newX;
+		offY = posY - newY;
+		posX = newX; posY = newY; 
+	}
 	static void UpdateKeyBoard(KeyBoardBindings binding) { currentBinding = binding; }
 
+	static float GetMouseXOffset() { return offX; }
+	static float GetMouseYOffset() { return offY; }
+
 private:
+	inline static float offX, offY = 0.f;
+	inline static float posX, posY = 0.f;
 	inline static Binding currentBinding{};
 	inline static std::vector<std::pair<Binding, Callback>> registeredCallbacks;
 };

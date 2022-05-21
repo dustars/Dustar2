@@ -52,9 +52,9 @@ VkRBInterface::~VkRBInterface()
 	vkDestroyInstance(vkInstance, nullptr);
 }
 
-bool VkRBInterface::Update()
+bool VkRBInterface::Update(float ms)
 {
-	return surface->Update();
+	return surface->Update(ms);
 }
 
 bool VkRBInterface::Render()
@@ -110,14 +110,14 @@ void VkRBInterface::InitResources(const std::vector<ResourceLayout*>& layouts)
 	for (auto& layout : layouts)
 	{
 		dynamic_cast<VkResourceLayout*>(layout)->AllocateDescriptorSet();
-		dynamic_cast<VkResourceLayout*>(layout)->UpdateDescriptorSet();
+		dynamic_cast<VkResourceLayout*>(layout)->BindResourcesAndDescriptors();
 	}
 }
 
 ResourceLayout* VkRBInterface::CreateResourceLayout()
 {
 	// 后端创建, Manager删除
-	return new VkResourceLayout(vkDevice);
+	return new VkResourceLayout(vkDevice, vkPhysicalDevice);
 }
 
 void VkRBInterface::InitVulkanInstance()

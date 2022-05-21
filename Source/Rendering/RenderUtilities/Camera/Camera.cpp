@@ -10,6 +10,8 @@ module;
 
 module Camera;
 
+import Input;
+
 Camera::Camera(float pitch, float yaw, float3 position) :
 	pitch(pitch),
 	yaw(yaw),
@@ -18,7 +20,8 @@ Camera::Camera(float pitch, float yaw, float3 position) :
 
 void Camera::UpdateCamera(float msec)
 {
-
+	yaw += 0.1 * Input::InputManager::GetMouseXOffset();
+	pitch += 0.1 * Input::InputManager::GetMouseYOffset();
 }
 
 mat4 Camera::BuildViewMatrix()

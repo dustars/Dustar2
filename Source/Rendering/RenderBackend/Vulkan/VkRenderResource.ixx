@@ -13,6 +13,7 @@
 export module VkRenderResource;
 
 import RenderResource;
+import Model;
 import <vector>;
 import <string>;
 import <unordered_map>;
@@ -40,6 +41,7 @@ export class VkResourceLayout : public ResourceLayout
 
 	// Reference Handle
 	VkDevice vkDevice;
+	VkPhysicalDevice vkPhysicalDevice;
 
 private:
     struct ResourceInfo
@@ -59,39 +61,76 @@ private:
         : name(name), type(type), stage(stage), stride(stride), size(size) {}
     };
 
+	struct resEntry
+	{
+		std::string name;
+		uint32_t size;
+		std::variant<VkBuffer, VkImage> res;
+		void* data;
+		resEntry(std::string name, uint32_t size, std::variant<VkBuffer, VkImage> res, void* data)
+			: name(name), size(size), res(res), data(data) {}
+	};
+
     std::vector<std::string> resourceNames;
     VkDescriptorSetLayout setLayout;
     VkDescriptorSet set;
 
     VkPipelineLayout pipelineLayout;
+    struct PushConstant
+    {
+        std::string name; void* data;
+		PushConstant(std::string name, void* data) : name(name), data(data) {}
+    };
+    std::vector<PushConstant> pushConstants;
+
+    //Model Data
+    VkBuffer vertexBuffer;
+    VkDeviceMemory vertexMemory;
+    VkBuffer indexBuffer;
+    VkDeviceMemory indexMemory;
+    uint32_t vertexCount;
+    uint32_t indexCount;
 public:
-    VkResourceLayout(VkDevice device) : vkDevice(device) {}
-    virtual ~VkResourceLayout() { DestroyResource(); }
+    VkResourceLayout(VkDevice device, VkPhysicalDevice pDev) : vkDevice(device) , vkPhysicalDevice(pDev) {}
+    virtual ~VkResourceLayout();
 
+    virtual void CreateModelData(const Model&) final override;
+    virtual void CreatePushContant(const std::string&, uint32_t, void* = nullptr) final override;
     virtual void CreateConstantBuffer(const std::string&, uint32_t, uint32_t, void* = nullptr) final override;
-
 
 	VkPipelineLayout GetPipelineLayout() { return pipelineLayout; }
 	const VkDescriptorSet* GetDescriptorSet() { return &set; }
+
+    uint32_t GetPushConstantsSize() { return pushConstants.size(); }
+    void*    SetPushConstant(uint32_t, VkShaderStageFlags&, uint32_t&);
+	const VkBuffer* GetVertexBufferPtr() { return &vertexBuffer; }
+	const VkBuffer* GetIndexBufferPtr() { return &indexBuffer; }
+	uint32_t GetVertexCount() { return vertexCount; }
+	uint32_t GetIndexCount() { return indexCount; }
 private:
+    // Called when creating Graphics Pipeline
+	VkPipelineLayout BuildPipelineLayout();
+
+    // Called Before execution of command buffer.
     void AllocateDescriptorSet();
-    void UpdateDescriptorSet();
     void BindResourcesAndDescriptors();
 
-	VkPipelineLayout BuildPipelineLayout();
-    void DestroyResource();
-
     // Utilities
-    static uint32_t FindMemoryType(VkPhysicalDevice, const VkMemoryRequirements&, VkMemoryPropertyFlags, VkMemoryPropertyFlags);
 
 // Static Members:
 private:
+    static std::vector<ResourceInfo> resourceInfo;
+    static const ResourceInfo* FindResource(const std::string& name)
+    {
+        for (auto& entry : resourceInfo) if (entry.name == name) return &entry;
+        return nullptr;
+    }
+
 	static std::unordered_map<VkDescriptorType, uint32_t> poolMembers;
 	static VkDescriptorPool descriptorPool;
-
-    static std::vector<ResourceInfo> resourceInfo;
-
     static void CreateDescriptorPool(VkDevice);
+
+    static uint32_t FindMemoryType(VkPhysicalDevice, const VkMemoryRequirements&, VkMemoryPropertyFlags, VkMemoryPropertyFlags);
 
 private:
     // 暂时把Buffer/Image相关放在这里
@@ -100,23 +139,13 @@ private:
     static VkMemoryRequirements imageMemoryRequirements;
 	static VkDeviceMemory ImageMemory;
 
-    struct resEntry
-    {
-        std::string name;
-        uint32_t size;
-        std::variant<VkBuffer, VkImage> res;
-        void* data;
-        resEntry(std::string name, uint32_t size, std::variant<VkBuffer, VkImage> res, void* data)
-            : name(name), size(size), res(res), data(data) {}
-    };
     static std::vector<resEntry> buffers;
     static std::vector<resEntry> Images;
-
 	void CreateBuffer(const std::string&, uint32_t, void*);
 	void CreateImage(const std::string&);
 
     static void CreateResources(VkDevice, VkPhysicalDevice);
-
+    // Called by CreateResources()
     static void CreateMemory(VkDevice, VkPhysicalDevice);
     static void BindBuffersAndMemory(VkDevice);
     static void BindImagesAndMemory(VkDevice);

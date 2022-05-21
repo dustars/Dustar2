@@ -14,6 +14,7 @@ import CommonAbstractionClass;
 import RendererBase;
 import RenderingBackend;
 import Camera;
+import Math;
 
 export class MiddleRenderer : public RendererBase
 {
@@ -21,8 +22,9 @@ public:
     MiddleRenderer(RENDER_API renderAPI = RENDER_API::VULKAN);
 
 	virtual void Init() final override;
-	virtual bool Update() final override;
+	virtual bool Update(float) final override;
 	virtual bool Render() final override;
 private:
     Camera camera;
+    mat4   view;
 };

@@ -50,7 +50,7 @@ public:
     VkRBInterface();
 	~VkRBInterface();
 
-	virtual bool Update() final override;
+	virtual bool Update(float) final override;
 	virtual bool Render() final override;
 
 	virtual Pipeline& CreateGraphicsPipeline(const ResourceLayout*, const ShaderArray&) final override;

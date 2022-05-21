@@ -65,7 +65,7 @@ export class RBInterface
 public:
     virtual ~RBInterface() {}
 
-	virtual bool Update() = 0; //还不清楚具体的使用场景
+	virtual bool Update(float) = 0; //还不清楚具体的使用场景
 	virtual bool Render() = 0;
 
     virtual Pipeline& CreateGraphicsPipeline(const ResourceLayout*, const ShaderArray&) = 0;

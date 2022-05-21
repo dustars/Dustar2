@@ -30,7 +30,6 @@ VkGraphicsPipeline::VkGraphicsPipeline(VkPhysicalDevice* pDev, VkDevice* dev, Vk
 	CreateRenderPass();
 	CreateFramebuffer();
 	// 这个要放外面可能
-	CreateVertexBuffer();
 	CreateShaderModule(shaders);
 	// Create Shaders, Vertex & Fragment Shaders must exist. Others are optional.
 	CreateGraphicsPipeline();
@@ -43,8 +42,6 @@ VkGraphicsPipeline::~VkGraphicsPipeline()
 	{
 		vkDestroyFramebuffer(*devicePtr, framebuffers[i], nullptr);
 	}
-	vkDestroyBuffer(*devicePtr, vertexBuffer, nullptr);
-	vkFreeMemory(*devicePtr, vertexMemory, nullptr);
 	vkDestroyPipeline(*devicePtr, graphicsPipeline, nullptr);
 	// 暂时由每个Pipeline负责删掉自己会用到的各种资源
 	delete resourceLayout; 
@@ -181,75 +178,6 @@ void VkGraphicsPipeline::CreateFramebuffer()
 	}
 }
 
-void VkGraphicsPipeline::CreateVertexBuffer()
-{
-	VkBufferCreateInfo createInfo;
-	createInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-	createInfo.pNext = nullptr;
-	createInfo.flags = 0;
-	createInfo.size = sizeof(Vertex) * 3;
-	createInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-	createInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-	createInfo.queueFamilyIndexCount = 0; //ignored
-	createInfo.pQueueFamilyIndices = nullptr;
-
-	if (VK_SUCCESS != vkCreateBuffer(*devicePtr, &createInfo, nullptr, &vertexBuffer))
-	{
-		throw std::runtime_error("Failed to Vertex Buffer");
-	}
-
-	// Check Requirement
-	VkMemoryRequirements memoryRequirements;
-	vkGetBufferMemoryRequirements(*devicePtr, vertexBuffer, &memoryRequirements);
-
-	// Find Suitable Memory Type
-	uint32_t memoryIndex = VkResourceLayout::FindMemoryType(
-		*pDevicePtr,
-		memoryRequirements,
-		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
-		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
-	);
-
-	// Allocate Memory
-	VkMemoryAllocateInfo allocInfo;
-	allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-	allocInfo.pNext = nullptr;
-	allocInfo.allocationSize = 1024 * 1024 * sizeof(float);
-	allocInfo.memoryTypeIndex = memoryIndex;
-
-	if (VK_SUCCESS != vkAllocateMemory(*devicePtr, &allocInfo, nullptr, &vertexMemory))
-	{
-		throw std::runtime_error("Failed to create device memory");
-	}
-
-	{ // Mapping
-		void* mappedData;
-		if (VK_SUCCESS != vkMapMemory(*devicePtr, vertexMemory, 0, VK_WHOLE_SIZE, 0, &mappedData))
-		{
-			throw std::runtime_error("Failed to Map Memory");
-		}
-
-		memcpy(mappedData, vertexData.data(), sizeof(Vertex) * 3);
-
-		// Flush the memory so the device can actually use the image data.
-		VkMappedMemoryRange range;
-		range.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
-		range.pNext = nullptr;
-		range.memory = vertexMemory;
-		range.offset = 0;
-		range.size = VK_WHOLE_SIZE;
-		vkFlushMappedMemoryRanges(*devicePtr, 1, &range);
-
-		vkUnmapMemory(*devicePtr, vertexMemory);
-	}
-
-	// Bind memory object and image object
-	if (VK_SUCCESS != vkBindBufferMemory(*devicePtr, vertexBuffer, vertexMemory, 0))
-	{
-		throw std::runtime_error("Failed to bind buffer and memory");
-	}
-}
-
 void VkGraphicsPipeline::CreateGraphicsPipeline()
 {
 	std::vector<VkPipelineShaderStageCreateInfo> shaderCreateInfo{};
@@ -283,7 +211,7 @@ void VkGraphicsPipeline::CreateGraphicsPipeline()
 	attributes.emplace_back( // Vertex UV
 		1, //Location
 		0, //Binding Index
-		VK_FORMAT_R32G32_SFLOAT,
+		VK_FORMAT_R32G32B32A32_SFLOAT,
 		sizeof(float) * 4
 	);
 

@@ -12,32 +12,47 @@ module;
 
 module MiddleRenderer;
 
-import Math;
 import CmdBuffer;
 import Pipeline;
 import RenderResource;
 import RenderResourceManager;
+import Model;
 
 using namespace RB;
 
 MiddleRenderer::MiddleRenderer(RENDER_API renderAPI)
     : RendererBase(renderAPI)
-	, camera(0, 0, Vector3(0.f, 1.f, 0.f))
+	, camera(0, 30, Vector3(1.f, 4.f, -2.f))
 {
-	camera.SetProjMatrix(Matrix4::Perspective(1.0f, 10000.0f, 800.f / 400.f, 45.0f));
+	camera.SetProjMatrix(Matrix4::Perspective(0.0f, 1000.0f, 800.f / 600.f, 45.0f));
 }
 
 void MiddleRenderer::Init()
 {
 	RenderResourceManager resourceManager(RBI);
 
-	//
+	// 资源创建
+	// TODO local variable cannot reach the point where Vulkan use it to initialize buffer/image
+	// TODO 我显卡居然是256字节对齐？？？？？？
+	static std::vector<mat4> matrices;
 	mat4 modelMatrix;
-	mat4 mvp = camera.GetProjMatrix() * camera.BuildViewMatrix() * modelMatrix;
-	//
+	modelMatrix.ToIdentity();
+	matrices.push_back(modelMatrix);
+	view = camera.BuildViewMatrix();
+	matrices.push_back(view);
+	matrices.push_back(camera.GetProjMatrix());
+	modelMatrix.ToZero();
+	matrices.push_back(modelMatrix);
+	
+	// Model
+	Model cube;
+	cube.CreateCube();
 
 	ResourceLayout* layout = resourceManager.CreateResourceLayout();
-	layout->CreateConstantBuffer("MVPMatrix", sizeof(mat4), sizeof(mat4) * 3, mvp.values);
+	layout->CreateModelData(cube);
+	layout->CreatePushContant("mvp", sizeof(mat4), view.values);
+	layout->CreateConstantBuffer("MVPMatrix", sizeof(mat4), sizeof(mat4) * 4, matrices.data());
+	//layout->CreateConstantBuffer("testMatrix", sizeof(mat4), sizeof(mat4), modelMatrix.values);
 
 	ShaderFile vert("../Rendering/Shaders/SimpleVertexShader.spv", "main", ShaderType::VS);
 	ShaderFile frag("../Rendering/Shaders/SimpleFragmentShader.spv", "mainPS", ShaderType::FS);
@@ -51,9 +66,11 @@ void MiddleRenderer::Init()
 	);
 }
 
-bool MiddleRenderer::Update()
+bool MiddleRenderer::Update(float ms)
 {
-	return RBI->Update();
+	camera.UpdateCamera(ms);
+	view = camera.BuildViewMatrix();
+	return RBI->Update(ms);
 }
 
 bool MiddleRenderer::Render()

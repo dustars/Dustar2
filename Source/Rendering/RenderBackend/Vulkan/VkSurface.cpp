@@ -49,9 +49,9 @@ void VkSurface::InitSurface(VkInstance* ins, VkPhysicalDevice* pDev, VkDevice* d
 	InitImageViews();
 }
 
-bool VkSurface::Update()
+bool VkSurface::Update(float ms)
 {
-	return window.Update();
+	return window.Update(ms);
 }
 
 bool VkSurface::InitWindowSurface(uint32_t queueFamilyIndex)

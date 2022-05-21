@@ -95,31 +95,42 @@ void VkCmdBuffer::EndRenderPass()
 
 void VkCmdBuffer::Draw(Pipeline& pipeline)
 {
+	VkGraphicsPipeline& p = dynamic_cast<VkGraphicsPipeline&>(pipeline);
 
-	if (PipelineType::Graphics == pipeline.GetType())
+	vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, p.GetPipeline());
+
+	uint32_t offset = 0;
+	for (uint32_t i = 0; i < p.GetPushConstantsSize(); i++)
 	{
-		VkDeviceSize offsets[] = { 0 };
-
-		auto* setPtr = dynamic_cast<VkGraphicsPipeline&>(pipeline).GetDescriptorSet();
-
-		vkCmdBindDescriptorSets(
-			cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, dynamic_cast<VkGraphicsPipeline&>(pipeline).GetPipelineLayout(),
-			0, 1, setPtr, // Descriptor
-			0, nullptr);
-
-		vkCmdBindVertexBuffers(cmd, 0, 1, dynamic_cast<VkGraphicsPipeline&>(pipeline).GetVertexBufferPtr(), offsets);
-
-		vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, dynamic_cast<VkGraphicsPipeline&>(pipeline).GetPipeline());
-
-		vkCmdDraw(cmd, dynamic_cast<VkGraphicsPipeline&>(pipeline).GetVertexDataSize(), 1, 0, 0);
+		VkShaderStageFlags stage;
+		uint32_t size;
+		if (void* data = p.SetPushConstant(i, stage, size))
+		{
+			vkCmdPushConstants(cmd, p.GetPipelineLayout(), stage, offset, size, data);
+		}
+		else throw std::runtime_error("Push constant value is invalid. Please check if given data has been destroyed");
+		offset += size;
 	}
 
-	if (PipelineType::Compute == pipeline.GetType())
-	{
-		//auto computePipeline = dynamic_cast<VkComputePipeline&>(pipeline);
-		//Dispatch
-	}
+	auto* setPtr = p.GetDescriptorSet();
+	vkCmdBindDescriptorSets(
+		cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, p.GetPipelineLayout(),
+		0, 1, setPtr, // Descriptor
+		0, nullptr);
 
+	VkDeviceSize offsets[] = { 0 };
+	vkCmdBindVertexBuffers(cmd, 0, 1, p.GetVertexBufferPtr(), offsets);
+
+	const VkBuffer* indexBuffer = p.GetIndexBufferPtr();
+	if (*indexBuffer != VK_NULL_HANDLE) // Draw Indexed
+	{
+		vkCmdBindIndexBuffer(cmd, *indexBuffer, offsets[0], VK_INDEX_TYPE_UINT16);
+		vkCmdDrawIndexed(cmd, p.GetIndexCount(), 1, 0, 0, 0);
+	}
+	else // Draw
+	{
+		vkCmdDraw(cmd, p.GetVertexCount(), 1, 0, 0);
+	}
 }
 
 void VkCmdBuffer::InitCommandPool(uint32_t queueFamilyIndex)

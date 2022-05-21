@@ -11,7 +11,7 @@
 export module SimpleApplication;
 
 import MiddleRenderer;
-import <stdint.h>;
+import Timer;
 
 export class SimpleApplication
 {
@@ -25,15 +25,15 @@ public:
 
     void Run()
     {
-        while (Update() && Render())
-        {
-            //Do something?限帧之类的?
-        }
+        Timer::SetFramerate(0);
+        do {
+            while (!Timer::Tick());
+        } while (Update(Timer::GetMS()) && Render());
     }
 
-    bool Update()
+    bool Update(float ms)
     {
-        return renderer.Update();
+        return renderer.Update(ms);
     }
     bool Render()
     {

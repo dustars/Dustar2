@@ -43,8 +43,8 @@ public:
     }
 
     virtual void Init() = 0;
+    virtual bool Update(float) = 0;
     virtual bool Render() = 0;
-    virtual bool Update() = 0;
 
 protected:
     // Rendering Backend

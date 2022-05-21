@@ -38,7 +38,7 @@ public:
 	~VkSurface();
 
 	void InitSurface(VkInstance*, VkPhysicalDevice*, VkDevice*, uint32_t);
-	bool Update();
+	bool Update(float);
 
 	//为什么auto可以？？？
 	auto& GetHWDN() { return window.GetHWDN(); }
