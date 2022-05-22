@@ -37,6 +37,11 @@ private:
 	bool bContinue = true;
 	HINSTANCE instance;
 	HWND windowHandle;
+
+	BOOL IsMouseWheelPresent()
+	{
+		return (GetSystemMetrics(SM_MOUSEWHEELPRESENT) != 0);
+	}
 };
 
 }//namespace Window

@@ -56,6 +56,7 @@ Win32Window::Win32Window(uint32_t width, uint32_t height)
 
 bool Win32Window::Update(float ms) const
 {
+    Input::InputManager::Reset();
 	std::wstringstream wss;
     wss << L"Dustars2   FPS:" << int(1000.f/ms);
     SetWindowText(windowHandle, wss.str().c_str());
@@ -65,8 +66,6 @@ bool Win32Window::Update(float ms) const
     {
         TranslateMessage(&msg);
         DispatchMessage(&msg);
-
-        Input::InputManager::Update();
     }
     return bContinue;
 }
@@ -74,6 +73,7 @@ bool Win32Window::Update(float ms) const
 // TODO: 对于不少Messages的处理最好是开一个thread，然后主线程继续执行，不然整个渲染就卡住了……
 LRESULT Win32Window::WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
+    wchar_t msg[32];
     switch (uMsg)
     {
         case WM_CREATE:
@@ -83,17 +83,6 @@ LRESULT Win32Window::WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 			SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR)pThis);
             return 0;
 		}
-        case WM_CLOSE:
-        {
-            Win32Window *pThis = (Win32Window*)GetWindowLongPtr(hwnd, GWLP_USERDATA);
-            pThis->bContinue = false;
-            return 0;
-        }
-        case WM_DESTROY:
-        {
-            PostQuitMessage(0);
-            return 0;
-        }
         case WM_MOUSEMOVE:
         {
 			int xPos = GET_X_LPARAM(lParam);
@@ -102,29 +91,50 @@ LRESULT Win32Window::WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
             return 0;
         }
         case WM_LBUTTONDOWN:
-        {
-			//int xPos = GET_X_LPARAM(lParam);
-			//int yPos = GET_Y_LPARAM(lParam);
+            Input::InputManager::UpdateBindingWindows(uint32_t(wParam), true);
             return 0;
-        }
-		case WM_LBUTTONUP:
+		case WM_RBUTTONDOWN:
+			Input::InputManager::UpdateBindingWindows(uint32_t(wParam), true);
+			return 0;
+		case WM_MBUTTONDOWN:
+			Input::InputManager::UpdateBindingWindows(uint32_t(wParam), true);
+			return 0;
+		case WM_LBUTTONUP: return 0;
+        case WM_RBUTTONUP: return 0;
+        case WM_MBUTTONUP: return 0;
+		case WM_XBUTTONDOWN:
 		{
-            Input::InputManager::UpdateMouse(Input::MouseBindings::LEFT_UP);
+            Input::InputManager::UpdateBindingWindows(uint32_t(GET_XBUTTON_WPARAM(wParam)), true);
 			return 0;
 		}
+		case WM_XBUTTONUP:
+		{
+			//Input::InputManager::UpdateBindingWindows(uint32_t(GET_XBUTTON_WPARAM(wParam)), false);
+			return 0;
+		}
+        case WM_MOUSEWHEEL:
+        {
+            // uints of mouse wheel movement
+            Input::InputManager::UpdateMouse(GET_WHEEL_DELTA_WPARAM(wParam));
+        }
         // 目前不处理 system key
         case WM_KEYDOWN:
         {
+            Input::InputManager::UpdateBindingWindows(uint32_t(wParam), true);
+			//swprintf_s(msg, L"WM_KEYDOWN: 0x%x\n", wParam); //Debug
+			//OutputDebugString(msg);
             return 0;
         }
 		case WM_KEYUP:
 		{
             // lParam bit 30 indicates the previous key flag, which is set to 1 for repeated key-down messages
-            
+            //Input::InputManager::UpdateBindingWindows(uint32_t(wParam), false);
 			return 0;
 		}
 		case WM_CHAR:
         {
+            // We don't need this right now...
+            // But it may come in handy later if there's some typings.
 			return 0;
         }
 		case WM_SIZE:
@@ -132,6 +142,17 @@ LRESULT Win32Window::WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 			// UINT width = LOWORD(lParam);
 			// UINT height = HIWORD(lParam);
 			// 给Renderer发送重新创建SwapChain的信息
+			return 0;
+		}
+		case WM_CLOSE:
+		{
+			Win32Window* pThis = (Win32Window*)GetWindowLongPtr(hwnd, GWLP_USERDATA);
+			pThis->bContinue = false;
+			return 0;
+		}
+		case WM_DESTROY:
+		{
+			PostQuitMessage(0);
 			return 0;
 		}
     }

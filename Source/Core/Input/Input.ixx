@@ -11,59 +11,66 @@
 
 export module Input;
 
-export import :Mouse;
-export import :Keyboard;
 export import :Bindings;
 
 import <functional>;
-import <variant>;
+import <vector>;
 
 namespace Input
 {
 export class InputManager {
+	typedef std::vector<std::pair<Bindings, std::function<void()>>> RegisterActions;
 public:
-	typedef std::variant<std::monostate, MouseBindings, KeyBoardBindings> Binding;
-	typedef std::function<void()> Callback;
 
-	static void RegisterBinding(Binding binding, Callback callback)
+	static void RegisterCallback(Bindings binding, std::function<void()> callback)
 	{
 		registeredCallbacks.emplace_back(binding, callback);
 	}
-	static void Update()
+
+	static void Reset()
 	{
-		if (std::holds_alternative<MouseBindings>(currentBinding))
-		{
-			for (auto& entry : registeredCallbacks)
-			{
-				if (entry.first == currentBinding) entry.second();
-			}
-		}
-		else if (std::holds_alternative<KeyBoardBindings>(currentBinding))
-		{
-			for (auto& entry : registeredCallbacks)
-			{
-				if (entry.first == currentBinding) entry.second();
-			}
-		}
-		currentBinding = std::monostate{}; // Set the binding to "empty" state.
+		offX = 0; offY = 0;
+		for (auto key : enabledBindings) key = false;
 	}
 
-	static void UpdateMouse(MouseBindings binding) { currentBinding = binding ;}
+	static void Execute()
+	{
+		for (auto& entry : registeredCallbacks)
+		{
+			if (enabledBindings[static_cast<uint8_t>(entry.first)]) entry.second();
+		}
+	}
+
+	static void UpdateBindingWindows(uint32_t, bool);
+	//static void UpdateBindingLinux(uint32_t, bool);
+	//static void UpdateBindingMacro(uint32_t, bool);
+
+
 	static void UpdateMouse(float newX, float newY)
-	{ 
+	{
 		offX = posX - newX;
 		offY = posY - newY;
 		posX = newX; posY = newY; 
 	}
-	static void UpdateKeyBoard(KeyBoardBindings binding) { currentBinding = binding; }
+	static void UpdateMouse(int del) { delta = delta; }
 
 	static float GetMouseXOffset() { return offX; }
 	static float GetMouseYOffset() { return offY; }
+	static float GetMouseDelta() { return delta; }
+	static bool GetKeyPressed(Bindings key) { return enabledBindings[static_cast<uint8_t>(key)]; }
 
 private:
+	// Mouse Position
 	inline static float offX, offY = 0.f;
 	inline static float posX, posY = 0.f;
-	inline static Binding currentBinding{};
-	inline static std::vector<std::pair<Binding, Callback>> registeredCallbacks;
+	// Mouse wheel movement
+	inline static int delta;
+
+	// If certain binding is pressed for the frame, it will be set to TRUE
+	// the enum order corresponds to the index.
+	// TODO: add holding state.
+	static std::vector<bool> enabledBindings;
+
+	static RegisterActions registeredCallbacks;
 };
 }

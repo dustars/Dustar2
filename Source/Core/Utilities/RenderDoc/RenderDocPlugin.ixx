@@ -17,9 +17,6 @@ module;
 #include "renderdoc_app.h"
 
 export module RenderDocPlugin;
-
-import Input;
-
 export void RenderDocWindowsInit(void*, void*);
 export void StartRenderDocCapture();
 export bool TriggerRenderDocCapture();
@@ -61,8 +58,6 @@ void RenderDocWindowsInit(void* deviceIn, void* wndHandleIn)
 
 	rdoc_api->SetActiveWindow(device, wndHandle);
 	rdoc_api->SetCaptureFilePathTemplate("../../../Resources/RenderDocCapture/Capture");
-
-	Input::InputManager::RegisterBinding(Input::MouseBindings::LEFT_UP, []() { TriggerRenderDocCapture(); });
 }
 
 // To start a frame capture, call StartFrameCapture.

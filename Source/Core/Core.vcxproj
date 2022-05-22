@@ -16,6 +16,10 @@
       <SubType>
       </SubType>
     </ClCompile>
+    <ClCompile Include="Input\Input.cpp">
+      <SubType>
+      </SubType>
+    </ClCompile>
     <ClCompile Include="Input\Input.ixx" />
     <ClCompile Include="Input\Bindings.ixx" />
     <ClCompile Include="Input\Keyboard.ixx" />

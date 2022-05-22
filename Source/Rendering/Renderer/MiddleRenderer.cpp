@@ -9,7 +9,6 @@
 */
 
 module;
-
 module MiddleRenderer;
 
 import CmdBuffer;
@@ -17,14 +16,15 @@ import Pipeline;
 import RenderResource;
 import RenderResourceManager;
 import Model;
+import Input;
 
 using namespace RB;
 
 MiddleRenderer::MiddleRenderer(RENDER_API renderAPI)
     : RendererBase(renderAPI)
-	, camera(0, 30, Vector3(1.f, 4.f, -2.f))
+	, camera(0, 0, float3(0.f, 0.f, 20.f))
 {
-	camera.SetProjMatrix(Matrix4::Perspective(0.0f, 1000.0f, 800.f / 600.f, 45.0f));
+	camera.SetProjMatrix(Matrix4::Perspective(0.1f, 1000.0f, 800.f / 600.f, 45.0f));
 }
 
 void MiddleRenderer::Init()
@@ -35,15 +35,23 @@ void MiddleRenderer::Init()
 	// TODO local variable cannot reach the point where Vulkan use it to initialize buffer/image
 	// TODO 我显卡居然是256字节对齐？？？？？？
 	static std::vector<mat4> matrices;
-	mat4 modelMatrix;
-	modelMatrix.ToIdentity();
-	matrices.push_back(modelMatrix);
+
+	float3 cameraPos = camera.GetPosition();
+
+	//view = mat4::BuildViewMatrix(float3(0.f, 2.f, 0.f), float3(0.f, 0.f, -1.f), float3(0.f, 1.f, 0.f));
 	view = camera.BuildViewMatrix();
+	mat4& proj = camera.GetProjMatrix();
+	proj.values[5] *= -1;
+
+	model.ToIdentity();
+	model.values[0] = model.values[5] = model.values[10] = 2;
+
+	// Uniform Buffer Matrices
+	matrices.push_back(model);
 	matrices.push_back(view);
-	matrices.push_back(camera.GetProjMatrix());
-	modelMatrix.ToZero();
-	matrices.push_back(modelMatrix);
-	
+	matrices.push_back(proj);
+	matrices.push_back(proj);
+
 	// Model
 	Model cube;
 	cube.CreateCube();
@@ -51,11 +59,12 @@ void MiddleRenderer::Init()
 	ResourceLayout* layout = resourceManager.CreateResourceLayout();
 	layout->CreateModelData(cube);
 	layout->CreatePushContant("mvp", sizeof(mat4), view.values);
+	//layout->CreatePushContant("mvp", sizeof(mat4), &projGLM);
 	layout->CreateConstantBuffer("MVPMatrix", sizeof(mat4), sizeof(mat4) * 4, matrices.data());
 	//layout->CreateConstantBuffer("testMatrix", sizeof(mat4), sizeof(mat4), modelMatrix.values);
 
-	ShaderFile vert("../Rendering/Shaders/SimpleVertexShader.spv", "main", ShaderType::VS);
-	ShaderFile frag("../Rendering/Shaders/SimpleFragmentShader.spv", "mainPS", ShaderType::FS);
+	ShaderFile vert("../Rendering/Shaders/vert.spv", "main", ShaderType::VS);
+	ShaderFile frag("../Rendering/Shaders/frag.spv", "main", ShaderType::FS);
 
 	Pipeline& testPipeline = RBI->CreateGraphicsPipeline( layout, ShaderArray{ vert, frag } );
 
@@ -70,10 +79,12 @@ bool MiddleRenderer::Update(float ms)
 {
 	camera.UpdateCamera(ms);
 	view = camera.BuildViewMatrix();
+
 	return RBI->Update(ms);
 }
 
 bool MiddleRenderer::Render()
 {
+	Input::InputManager::Execute();
     return RBI->Render();
 }

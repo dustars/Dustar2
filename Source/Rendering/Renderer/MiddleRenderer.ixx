@@ -7,7 +7,6 @@
 
     Notes:
 */
-
 export module MiddleRenderer;
 
 import CommonAbstractionClass;
@@ -26,5 +25,6 @@ public:
 	virtual bool Render() final override;
 private:
     Camera camera;
-    mat4   view;
+    mat4    model;
+    mat4    view;
 };

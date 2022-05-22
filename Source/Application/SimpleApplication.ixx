@@ -25,7 +25,7 @@ public:
 
     void Run()
     {
-        Timer::SetFramerate(0);
+        Timer::SetFramerate(60);
         do {
             while (!Timer::Tick());
         } while (Update(Timer::GetMS()) && Render());

@@ -153,16 +153,24 @@ Matrix4 Matrix4::Translation( const Vector3 &translation )	{
 	return m;
 }
 
-Matrix4 Matrix4::GetTransposedRotation() {
+Matrix4 Matrix4::GetTransposed() {
 	Matrix4 temp;
 	temp.values[0] = values[0];
 	temp.values[5] = values[5];
 	temp.values[10] = values[10];
+	temp.values[15] = values[15];
+
 	temp.values[1] = values[4];
-	temp.values[4] = values[1];
 	temp.values[2] = values[8];
-	temp.values[8] = values[2];
+	temp.values[3] = values[12];
+	temp.values[4] = values[1];
 	temp.values[6] = values[9];
+	temp.values[7] = values[13];
+	temp.values[8] = values[2];
 	temp.values[9] = values[6];
+	temp.values[11] = values[14];
+	temp.values[12] = values[3];
+	temp.values[13] = values[7];
+	temp.values[14] = values[11];
 	return temp;
 }

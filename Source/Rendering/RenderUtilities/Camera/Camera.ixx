@@ -17,6 +17,8 @@ export class Camera
 	float	yaw;
 	float	pitch;
 	float3	position;
+	float3	lookDir;
+	float3	upDir;
 	mat4	projMatrix;
 
 public:
@@ -27,7 +29,7 @@ public:
 
 	mat4 BuildViewMatrix();
 	
-	mat4	GetProjMatrix() const { return projMatrix; }
+	mat4&	GetProjMatrix() { return projMatrix; }
 	void	SetProjMatrix(mat4 projM) { projMatrix = projM; }
 
 	float3	GetPosition() const { return position; }

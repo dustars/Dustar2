@@ -14,6 +14,7 @@ module;
 #include <stdexcept>
 module VkRenderingBackend;
 
+import Input;
 import RenderDocPlugin;
 import <vector>;
 import <vulkan\vulkan.h>;
@@ -27,6 +28,7 @@ VkRBInterface::VkRBInterface()
 {
 #ifdef RENDER_DOC_ENABLE
 	RenderDocWindowsInit((void*)&vkInstance, (void*)&surface->GetHWDN());
+	Input::InputManager::RegisterCallback(Input::Bindings::F11, []() { TriggerRenderDocCapture(); });
 #endif
 	InitVulkanInstance();
 	InitVulkanPhysicalDevices();
