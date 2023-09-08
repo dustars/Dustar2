@@ -9,8 +9,7 @@
 */
 export module VkSurface;
 
-import WindowSystem;
-import <vector>;
+import std;
 import <vulkan\vulkan.h>;
 
 namespace RB
@@ -30,18 +29,10 @@ export class VkSurface
 	std::vector<VkImage> vkSwapChainImages; //存储在SwapChain中的N张Images
 	std::vector<VkImageView> presentImageViews;
 
-	// 目前由每个API负责管理window 后面可能要封装平台 不过目前只提供一个windows系统的就行
-	Window::Win32Window window;
-
 public:
-	VkSurface();
-	~VkSurface();
-
 	void InitSurface(VkInstance*, VkPhysicalDevice*, VkDevice*, uint32_t);
-	bool Update(float);
+	void DestroySurface();
 
-	//为什么auto可以？？？
-	auto& GetHWDN() { return window.GetHWDN(); }
 	uint32_t GetAvailableImageIndex(uint64_t waitTimeNano, VkSemaphore sem, VkFence fence = VK_NULL_HANDLE) const; //从窗口系统获取一张可用的Image
 	VkImageView* GetAvailableImageView(uint32_t i) { return &presentImageViews[i]; }; //从窗口系统获取一张可用的Image
 	uint32_t GetNumImages() { return presentImageViews.size(); }

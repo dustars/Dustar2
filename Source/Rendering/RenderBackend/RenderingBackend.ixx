@@ -49,9 +49,7 @@ import CommonAbstractionClass;
 import CmdBuffer;
 import Pipeline;
 import RenderResource;
-import <functional>;
-import <vector>;
-import <string>;
+import std;
 
 namespace RB
 {

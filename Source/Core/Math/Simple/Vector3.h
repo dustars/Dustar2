@@ -62,7 +62,7 @@ public:
 	}
 
 	static float	Distance(const Vector3& a, const Vector3& b) {
-		return sqrt(pow((a.x - b.x), 2) + pow((a.y - b.y), 2) + pow((a.z - b.z), 2));
+		return static_cast<float>(sqrt(pow((a.x - b.x), 2) + pow((a.y - b.y), 2) + pow((a.z - b.z), 2)));
 	}
 
 	static float	Dot(const Vector3 &a, const Vector3 &b) {

@@ -10,8 +10,7 @@
 
 export module CommonAbstractionClass;
 
-import <string>;
-import <vector>;
+import std;
 
 export enum class RENDER_API
 {

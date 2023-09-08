@@ -11,7 +11,7 @@
 
 export module Timer;
 
-import <chrono>;
+import std;
 import <stdint.h>;
 
 export class Timer

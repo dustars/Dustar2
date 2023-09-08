@@ -10,6 +10,7 @@
 
 export module VkCmdBuffer;
 
+import std;
 import CmdBuffer;
 import Pipeline;
 import VkGraphicsPipeline;
@@ -28,10 +29,8 @@ export class VkCmdBuffer : public CmdBuffer
 	VkDevice* devicePtr;
 
 public:
-	VkCmdBuffer();
-	~VkCmdBuffer();
-
 	void InitCommandBuffer(VkDevice*, uint32_t);
+	void DestroyCommandBuffer();
 
 	VkCommandBuffer& GetCommandBuffer() { return cmd; }
 

@@ -63,8 +63,8 @@ void MiddleRenderer::Init()
 	layout->CreateConstantBuffer("MVPMatrix", sizeof(mat4), sizeof(mat4) * 4, matrices.data());
 	//layout->CreateConstantBuffer("testMatrix", sizeof(mat4), sizeof(mat4), modelMatrix.values);
 
-	ShaderFile vert("../Rendering/Shaders/vert.spv", "main", ShaderType::VS);
-	ShaderFile frag("../Rendering/Shaders/frag.spv", "main", ShaderType::FS);
+	ShaderFile vert("../Rendering/Shaders/SimpleVertexShader.spv", "main", ShaderType::VS);
+	ShaderFile frag("../Rendering/Shaders/SimpleFragmentShader.spv", "main", ShaderType::FS);
 
 	Pipeline& testPipeline = RBI->CreateGraphicsPipeline( layout, ShaderArray{ vert, frag } );
 
@@ -85,6 +85,5 @@ bool MiddleRenderer::Update(float ms)
 
 bool MiddleRenderer::Render()
 {
-	Input::InputManager::Execute();
     return RBI->Render();
 }

@@ -30,7 +30,7 @@ static inline double DegToRad(const double rad)
 };
 
 //Just an int type, thus it won't be THAT large. Keep this in mind when x is big.
-static inline int Factorial(int x) {
+static inline size_t Factorial(size_t x) {
 	if (!x) return 1;
 	for (std::size_t i = x - 1; i > 0; i--) x *= i;
 	return x;
@@ -44,7 +44,7 @@ static inline float EulerDistance(float x, float y, float z, float x1, float y1,
 	disY *= disY;
 	disZ *= disZ;
 	disX += disY + disZ;
-	return sqrt(disX);
+	return static_cast<float>(sqrt(disX));
 }
 
 static inline float Remap(float value, float oldMin, float oldMax, float newMin, float newMax)

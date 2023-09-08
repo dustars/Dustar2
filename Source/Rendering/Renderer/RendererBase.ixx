@@ -13,7 +13,6 @@ export module RendererBase;
 import CommonAbstractionClass;
 import RenderingBackend;
 import VkRenderingBackend;
-import <vector>;
 
 using namespace RB;
 

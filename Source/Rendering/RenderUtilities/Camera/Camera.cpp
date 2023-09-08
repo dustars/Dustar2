@@ -7,7 +7,7 @@
 */
 
 module;
-
+#define FACTOR 0.01f
 module Camera;
 
 import Input;
@@ -24,17 +24,17 @@ void Camera::UpdateCamera(float msec)
 	pitch += 0.1 * Input::InputManager::GetMouseYOffset();
 
 	if (Input::InputManager::GetKeyPressed(Input::Bindings::W)) {
-		position += (Matrix4::Rotation(yaw, Vector3(0, 1, 0)) * Vector3(0, 0, -1) * msec);
+		position += (Matrix4::Rotation(yaw, Vector3(0, 1, 0)) * Vector3(0, 0, -1) * msec) * FACTOR;
 	}
 	if (Input::InputManager::GetKeyPressed(Input::Bindings::A)) {
-		position -= (Matrix4::Rotation(yaw, Vector3(0, 1, 0)) * Vector3(0, 0, -1) * msec);
+		position -= (Matrix4::Rotation(yaw, Vector3(0, 1, 0)) * Vector3(0, 0, -1) * msec) * FACTOR;
 	}
 
 	if (Input::InputManager::GetKeyPressed(Input::Bindings::S)) {
-		position += (Matrix4::Rotation(yaw, Vector3(0, 1, 0)) * Vector3(-1, 0, 0) * msec);
+		position += (Matrix4::Rotation(yaw, Vector3(0, 1, 0)) * Vector3(-1, 0, 0) * msec) * FACTOR;
 	}
 	if (Input::InputManager::GetKeyPressed(Input::Bindings::D)) {
-		position -= (Matrix4::Rotation(yaw, Vector3(0, 1, 0)) * Vector3(-1, 0, 0) * msec);
+		position -= (Matrix4::Rotation(yaw, Vector3(0, 1, 0)) * Vector3(-1, 0, 0) * msec) * FACTOR;
 	}
 
 	//if (Input::InputManager::GetKeyPressed(Bindings::SPACE)) {

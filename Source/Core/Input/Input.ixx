@@ -13,8 +13,8 @@ export module Input;
 
 export import :Bindings;
 
-import <functional>;
-import <vector>;
+import std;
+import <stdint.h>;
 
 namespace Input
 {
@@ -37,7 +37,11 @@ public:
 	{
 		for (auto& entry : registeredCallbacks)
 		{
-			if (enabledBindings[static_cast<uint8_t>(entry.first)]) entry.second();
+			if (bool res = enabledBindings[static_cast<uint8_t>(entry.first)])
+			{
+				res = false;
+				entry.second();
+			}
 		}
 	}
 
@@ -64,7 +68,7 @@ private:
 	inline static float offX, offY = 0.f;
 	inline static float posX, posY = 0.f;
 	// Mouse wheel movement
-	inline static int delta;
+	inline static float delta;
 
 	// If certain binding is pressed for the frame, it will be set to TRUE
 	// the enum order corresponds to the index.

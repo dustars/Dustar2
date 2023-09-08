@@ -7,10 +7,12 @@
 */
 
 module;
-#include <stdexcept>
-#include <sstream>
 #include <windowsx.h>
+#define VK_USE_PLATFORM_WIN32_KHR
+#include <vulkan\vulkan.h>
 module WindowSystem:Win32;
+
+import std;
 
 namespace Window
 {
@@ -52,11 +54,27 @@ Win32Window::Win32Window(uint32_t width, uint32_t height)
     );
 
     if(!windowHandle) throw std::runtime_error("Cannot Create Window");
+    windowInstance = this;
+}
+
+void Win32Window::InitWindowSurface(VkInstance vkInstance, VkSurfaceKHR& surface)
+{
+	VkWin32SurfaceCreateInfoKHR createInfo;
+	createInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
+	createInfo.pNext = nullptr;
+	createInfo.flags = 0;
+	createInfo.hinstance = GetModuleHandle(NULL);
+	createInfo.hwnd = windowInstance->GetHWDN();
+
+	if (VK_SUCCESS != vkCreateWin32SurfaceKHR(vkInstance, &createInfo, nullptr, &surface))
+	{
+		throw std::runtime_error("Failed to create Win32 Surface");
+	}
+
 }
 
 bool Win32Window::Update(float ms) const
 {
-    Input::InputManager::Reset();
 	std::wstringstream wss;
     wss << L"Dustars2   FPS:" << int(1000.f/ms);
     SetWindowText(windowHandle, wss.str().c_str());
@@ -99,9 +117,15 @@ LRESULT Win32Window::WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 		case WM_MBUTTONDOWN:
 			Input::InputManager::UpdateBindingWindows(uint32_t(wParam), true);
 			return 0;
-		case WM_LBUTTONUP: return 0;
-        case WM_RBUTTONUP: return 0;
-        case WM_MBUTTONUP: return 0;
+		case WM_LBUTTONUP:
+            Input::InputManager::UpdateBindingWindows(uint32_t(wParam), false);
+            return 0;
+        case WM_RBUTTONUP:
+            Input::InputManager::UpdateBindingWindows(uint32_t(wParam), false);
+            return 0;
+        case WM_MBUTTONUP:
+            Input::InputManager::UpdateBindingWindows(uint32_t(wParam), false);
+            return 0;
 		case WM_XBUTTONDOWN:
 		{
             Input::InputManager::UpdateBindingWindows(uint32_t(GET_XBUTTON_WPARAM(wParam)), true);
@@ -109,7 +133,7 @@ LRESULT Win32Window::WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 		}
 		case WM_XBUTTONUP:
 		{
-			//Input::InputManager::UpdateBindingWindows(uint32_t(GET_XBUTTON_WPARAM(wParam)), false);
+			Input::InputManager::UpdateBindingWindows(uint32_t(GET_XBUTTON_WPARAM(wParam)), false);
 			return 0;
 		}
         case WM_MOUSEWHEEL:
@@ -128,7 +152,7 @@ LRESULT Win32Window::WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 		case WM_KEYUP:
 		{
             // lParam bit 30 indicates the previous key flag, which is set to 1 for repeated key-down messages
-            //Input::InputManager::UpdateBindingWindows(uint32_t(wParam), false);
+            Input::InputManager::UpdateBindingWindows(uint32_t(wParam), false);
 			return 0;
 		}
 		case WM_CHAR:

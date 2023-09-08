@@ -10,8 +10,9 @@
 
 export module RenderResourceManager;
 
+import std;
 import RenderingBackend;
-import <vector>;
+import RenderResource;
 
 namespace RB
 {

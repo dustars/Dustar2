@@ -13,12 +13,7 @@
 export module VkRenderResource;
 
 import RenderResource;
-import Model;
-import <vector>;
-import <string>;
-import <unordered_map>;
 import <vulkan\vulkan.h>;
-import <variant>;
 
 namespace RB
 {

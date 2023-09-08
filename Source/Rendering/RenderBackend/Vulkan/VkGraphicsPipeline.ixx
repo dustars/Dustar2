@@ -14,9 +14,8 @@ import CommonAbstractionClass;
 import Pipeline;
 import VkSurface;
 import VkRenderResource;
-import Model;
-import <vector>;
-import <string>;
+//import Model;
+import std;
 import <stdint.h>;
 import <vulkan\vulkan.h>;
 

@@ -6,9 +6,9 @@
     5/16/2022 10:47:46 PM
 */
 
-module;
-#include <stdexcept>
 module VkRenderResource;
+
+import <vulkan/vulkan.h>;
 
 namespace RB
 {
@@ -107,7 +107,7 @@ void VkResourceLayout::CreateModelData(const Model& m)
 			throw std::runtime_error("Failed to map vertex Memory");
 		}
 
-		memcpy(mappedData, vertexData.data(), vertexByteSize);
+		std::memcpy(mappedData, vertexData.data(), vertexByteSize);
 		vkUnmapMemory(vkDevice, vertexMemory);
 
 		// Bind memory object and image object
@@ -138,7 +138,7 @@ void VkResourceLayout::CreateModelData(const Model& m)
 			throw std::runtime_error("Failed to map index memory");
 		}
 
-		memcpy(mappedData, indexData.data(), indexByteSize);
+		std::memcpy(mappedData, indexData.data(), indexByteSize);
 		vkUnmapMemory(vkDevice, indexMemory);
 
 		// Bind memory object and image object
@@ -460,7 +460,7 @@ void VkResourceLayout::BindBuffersAndMemory(VkDevice vkDevice)
 				throw std::runtime_error("Failed to Map Memory");
 			}
 
-			memcpy(mappedData, entry.data, entry.size);
+			std::memcpy(mappedData, entry.data, entry.size);
 			vkUnmapMemory(vkDevice, bufferMemory);
 		}
 

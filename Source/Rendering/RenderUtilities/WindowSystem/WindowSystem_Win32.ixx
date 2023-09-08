@@ -17,6 +17,7 @@ import :WindowBase;
 import Input;
 import <stdint.h>;
 import <Windows.h>;
+import <Vulkan/vulkan.h>;
 
 namespace Window
 {
@@ -30,6 +31,8 @@ public:
 
 	virtual bool Update(float) const final override;
 
+	static void InitWindowSurface(VkInstance, VkSurfaceKHR&);
+
 	HINSTANCE& GetInstance() { return instance; }
 	HWND& GetHWDN() { return windowHandle; }
 
@@ -38,10 +41,8 @@ private:
 	HINSTANCE instance;
 	HWND windowHandle;
 
-	BOOL IsMouseWheelPresent()
-	{
-		return (GetSystemMetrics(SM_MOUSEWHEELPRESENT) != 0);
-	}
+	// Global window Instance;
+	inline static Win32Window* windowInstance = nullptr;
 };
 
 }//namespace Window

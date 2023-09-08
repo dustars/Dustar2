@@ -11,29 +11,14 @@
 */
 
 module;
-#include <stdexcept>
 #define VK_USE_PLATFORM_WIN32_KHR
-#include <vulkan\vulkan.h>
 module VkSurface;
+
+import WindowSystem;
+import <vulkan/vulkan.h>;
 
 namespace RB
 {
-
-VkSurface::VkSurface()
-	: windowWidth(800)
-	, windowHeight(600)
-	, window(windowWidth, windowHeight)
-{}
-
-VkSurface::~VkSurface()
-{
-	for (size_t i = 0; i < presentImageViews.size(); i++)
-	{
-		vkDestroyImageView(*devicePtr, presentImageViews[i], nullptr);
-	}
-	vkDestroySwapchainKHR(*devicePtr, vkSwapChain, nullptr);
-	vkDestroySurfaceKHR(*instancePtr, vkSurface, nullptr);
-}
 
 void VkSurface::InitSurface(VkInstance* ins, VkPhysicalDevice* pDev, VkDevice* dev, uint32_t queueFamilyIndex)
 {
@@ -41,32 +26,7 @@ void VkSurface::InitSurface(VkInstance* ins, VkPhysicalDevice* pDev, VkDevice* d
 	pDevicePtr = pDev;
 	devicePtr = dev;
 
-	if (!InitWindowSurface(queueFamilyIndex))
-	{
-		throw std::runtime_error("Current selected queue doesn't support Presentation");
-	}
-	InitSwapChain();
-	InitImageViews();
-}
-
-bool VkSurface::Update(float ms)
-{
-	return window.Update(ms);
-}
-
-bool VkSurface::InitWindowSurface(uint32_t queueFamilyIndex)
-{
-	VkWin32SurfaceCreateInfoKHR createInfo;
-	createInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
-	createInfo.pNext = nullptr;
-	createInfo.flags = 0;
-	createInfo.hinstance = window.GetInstance();
-	createInfo.hwnd = window.GetHWDN();
-
-	if (VK_SUCCESS != vkCreateWin32SurfaceKHR(*instancePtr, &createInfo, nullptr, &vkSurface))
-	{
-		throw std::runtime_error("Failed to create Win32 Surface");
-	}
+	Window::Win32Window::InitWindowSurface(*ins, vkSurface);
 
 	// Check if the queue is able to present images
 	VkBool32 supported = false;
@@ -74,7 +34,21 @@ bool VkSurface::InitWindowSurface(uint32_t queueFamilyIndex)
 	{
 		throw std::runtime_error("Failed to get surface presentation support");
 	}
-	return supported;
+	if (!supported) throw std::runtime_error("Current selected queue doesn't support Presentation");
+
+	InitSwapChain();
+	InitImageViews();
+}
+
+
+void VkSurface::DestroySurface()
+{
+	for (size_t i = 0; i < presentImageViews.size(); i++)
+	{
+		vkDestroyImageView(*devicePtr, presentImageViews[i], nullptr);
+	}
+	vkDestroySwapchainKHR(*devicePtr, vkSwapChain, nullptr);
+	vkDestroySurfaceKHR(*instancePtr, vkSurface, nullptr);
 }
 
 void VkSurface::InitSwapChain()

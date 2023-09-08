@@ -11,7 +11,7 @@
 export module RenderResource;
 
 import Model;
-import <string>;
+import std;
 import <stdint.h>;
 
 namespace RB

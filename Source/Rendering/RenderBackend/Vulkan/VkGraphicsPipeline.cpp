@@ -6,13 +6,8 @@
     5/15/2022 10:51:39 AM
 */
 
-module;
-#include <fstream>
-#include <stdexcept>
 module VkGraphicsPipeline;
 
-import <vector>;
-import <string>;
 import <stdint.h>;
 import <vulkan\vulkan.h>;
 

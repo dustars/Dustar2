@@ -6,26 +6,23 @@
     5/14/2022 6:37:09 PM
 */
 
-module;
-#include <stdexcept>
-#include <vulkan\vulkan.h>
 module VkCmdBuffer;
+
+import <vulkan\vulkan.h>;
 
 namespace RB
 {
-
-VkCmdBuffer::VkCmdBuffer() {}
-
-VkCmdBuffer::~VkCmdBuffer()
-{
-	vkDestroyCommandPool(*devicePtr, vkCommandPool, nullptr);
-}
 
 void VkCmdBuffer::InitCommandBuffer(VkDevice* devP, uint32_t queueFamilyIndex)
 {
 	devicePtr = devP;
 	InitCommandPool(queueFamilyIndex);
 	InitCommandBuffers();
+}
+
+void VkCmdBuffer::DestroyCommandBuffer()
+{
+	vkDestroyCommandPool(*devicePtr, vkCommandPool, nullptr);
 }
 
 void VkCmdBuffer::BeginCommandBuffer()

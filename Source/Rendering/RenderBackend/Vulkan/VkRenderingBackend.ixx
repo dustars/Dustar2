@@ -16,8 +16,6 @@ import VkGraphicsPipeline;
 import VkComputePipeline;
 import RenderResource;
 import VkRenderResource;
-import <vector>;
-import <string>;
 import <stdint.h>;
 import <vulkan\vulkan.h>;
 
@@ -27,7 +25,7 @@ namespace RB
 export class VkRBInterface : public RBInterface
 {
 	// Vulkan Initialization objects
-	VkInstance vkInstance;
+	inline static VkInstance vkInstance = VK_NULL_HANDLE;
 	VkPhysicalDevice vkPhysicalDevice;
 	VkDevice vkDevice;
 	uint32_t currentQueueFamilyIndex; //目前一个 queue 打天下……还没 Multithreading
@@ -35,8 +33,8 @@ export class VkRBInterface : public RBInterface
 	std::vector<VkQueue> vkQueues;
 
 	// Vulkan side's window buffer
-	VkSurface* surface;
-	VkCmdBuffer* cmd;
+	VkSurface surface;
+	VkCmdBuffer cmd;
 
 	// Temp Synchronization
 	VkSemaphore imageAvailableSemaphore;
@@ -55,6 +53,8 @@ public:
 
 	virtual Pipeline& CreateGraphicsPipeline(const ResourceLayout*, const ShaderArray&) final override;
 	virtual Pipeline& CreateComputePipeline(const ResourceLayout*, const ShaderFile&) final override;
+
+	static void* GetVkInstance() { return (void*)vkInstance; }
 
 protected:
 	virtual void InitResources(const std::vector<ResourceLayout*>&) final override;

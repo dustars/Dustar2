@@ -8,36 +8,26 @@
 
 module;
 #define WINDOW_APP
-#define RENDER_DOC_ENABLE
 #define VK_USE_PLATFORM_WIN32_KHR
-
-#include <stdexcept>
 module VkRenderingBackend;
 
 import Input;
 import RenderDocPlugin;
-import <vector>;
 import <vulkan\vulkan.h>;
 
 namespace RB
 {
 
 VkRBInterface::VkRBInterface()
-	: surface(new VkSurface())
-	, cmd(new VkCmdBuffer())
 {
-#ifdef RENDER_DOC_ENABLE
-	RenderDocWindowsInit((void*)&vkInstance, (void*)&surface->GetHWDN());
-	Input::InputManager::RegisterCallback(Input::Bindings::F11, []() { TriggerRenderDocCapture(); });
-#endif
 	InitVulkanInstance();
 	InitVulkanPhysicalDevices();
 	InitVulkanLogicalDevice();
 	InitVulkanQueues();
 	InitVulkanSynchronizations();
 
-	surface->InitSurface(&vkInstance, &vkPhysicalDevice, &vkDevice, currentQueueFamilyIndex);
-	cmd->InitCommandBuffer(&vkDevice, currentQueueFamilyIndex);
+	surface.InitSurface(&vkInstance, &vkPhysicalDevice, &vkDevice, currentQueueFamilyIndex);
+	cmd.InitCommandBuffer(&vkDevice, currentQueueFamilyIndex);
 }
 
 VkRBInterface::~VkRBInterface()
@@ -45,8 +35,8 @@ VkRBInterface::~VkRBInterface()
 	// 必须提前删掉pipelines 各种依赖关系你懂的
 	testGraphicsPipeline.clear();
 	// 必须在删除device和instance之前delete cmd 和 surface 各种依赖关系你懂的
-	delete cmd;
-	delete surface;
+	cmd.DestroyCommandBuffer();
+	surface.DestroySurface();
 	vkDestroySemaphore(vkDevice, imageAvailableSemaphore, nullptr);
 	vkDestroySemaphore(vkDevice, renderFinishedSemaphore, nullptr);
 	vkDestroyFence(vkDevice, inFlightFence, nullptr);
@@ -56,7 +46,7 @@ VkRBInterface::~VkRBInterface()
 
 bool VkRBInterface::Update(float ms)
 {
-	return surface->Update(ms);
+	return true;
 }
 
 bool VkRBInterface::Render()
@@ -67,16 +57,16 @@ bool VkRBInterface::Render()
 		vkWaitForFences(vkDevice, 1, &inFlightFence, VK_TRUE, UINT64_MAX);
 		vkResetFences(vkDevice, 1, &inFlightFence);
 
-		uint32_t imageIndex = surface->GetAvailableImageIndex(UINT64_MAX, imageAvailableSemaphore);
+		uint32_t imageIndex = surface.GetAvailableImageIndex(UINT64_MAX, imageAvailableSemaphore);
 
-		cmd->BeginCommandBuffer();
-		cmd->BeginRenderPass(testGraphicsPipeline[i], imageIndex);
+		cmd.BeginCommandBuffer();
+		cmd.BeginRenderPass(testGraphicsPipeline[i], imageIndex);
 
-		renderingOps[i](cmd);
+		renderingOps[i](&cmd);
 
-		cmd->EndRenderPass();
-		cmd->EndCommandBuffer();
-		cmd->SubmitCommandBuffer(vkQueues[0], imageAvailableSemaphore, renderFinishedSemaphore);
+		cmd.EndRenderPass();
+		cmd.EndCommandBuffer();
+		cmd.SubmitCommandBuffer(vkQueues[0], imageAvailableSemaphore, renderFinishedSemaphore);
 
 		WindowPresentation(imageIndex);
 		// 相当重要……
@@ -92,7 +82,7 @@ Pipeline& VkRBInterface::CreateGraphicsPipeline(const ResourceLayout* layout, co
 	return dynamic_cast<Pipeline&>(testGraphicsPipeline.emplace_back(
 		&vkPhysicalDevice,
 		&vkDevice,
-		surface,
+		&surface,
 		dynamic_cast<const VkResourceLayout*>(layout),
 		shaders
 	));
@@ -152,7 +142,9 @@ void VkRBInterface::InitVulkanInstance()
 	createInfo.enabledExtensionCount = static_cast<uint32_t>(enabledInstanceExtensions.size());
 	createInfo.ppEnabledExtensionNames = enabledInstanceExtensions.data();
 
-	if (VK_SUCCESS != vkCreateInstance(&createInfo, nullptr, &vkInstance))
+	auto info = vkCreateInstance(&createInfo, nullptr, &VkRBInterface::vkInstance);
+
+	if (VK_SUCCESS != info)
 	{
 		throw std::runtime_error("failed to Create Vulkan Instance");
 	}
@@ -368,7 +360,7 @@ void VkRBInterface::WindowPresentation(uint32_t imageIndex)
 	presentInfo.waitSemaphoreCount = 1;
 	presentInfo.pWaitSemaphores = &renderFinishedSemaphore;
 	presentInfo.swapchainCount = 1;
-	presentInfo.pSwapchains = &surface->GetSwapChain();
+	presentInfo.pSwapchains = &surface.GetSwapChain();
 	presentInfo.pImageIndices = &imageIndex;
 	presentInfo.pResults = &result;
 
