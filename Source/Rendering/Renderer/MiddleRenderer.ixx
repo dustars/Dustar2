@@ -9,22 +9,15 @@
 */
 export module MiddleRenderer;
 
-import CommonAbstractionClass;
+import Core;
 import RendererBase;
-import RenderingBackend;
-import Camera;
-import Math;
 
-export class MiddleRenderer : public RendererBase
+export class MiddleRenderer : public RB::RendererBase
 {
 public:
-    MiddleRenderer(RENDER_API renderAPI = RENDER_API::VULKAN);
+    MiddleRenderer(float2 windowSize = float2(1000, 800));
 
 	virtual void Init() final override;
 	virtual bool Update(float) final override;
 	virtual bool Render() final override;
-private:
-    Camera camera;
-    mat4    model;
-    mat4    view;
 };

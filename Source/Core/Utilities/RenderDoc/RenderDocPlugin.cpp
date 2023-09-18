@@ -12,35 +12,49 @@ module;
 #include "renderdoc_app.h"
 module RenderDocPlugin;
 
-RenderDocPlugin::RenderDocPlugin(void* deviceIn, void* wndHandleIn)
+bool RenderDocPlugin::HookRenderDoc(void* deviceIn, void* wndHandleIn)
 {
-	if (!deviceIn || !wndHandleIn) return;
+	// Should be somewhere else
+	if (!deviceIn || !wndHandleIn) return false;
+
 	// TODO: Only Used in vulkan
 	device = (RENDERDOC_DevicePointer)RENDERDOC_DEVICEPOINTER_FROM_VKINSTANCE(deviceIn);
 	wndHandle = (RENDERDOC_WindowHandle)wndHandleIn;
 
+	// RenderDoc Initializing...
 	std::wstring renderDocPath;
 	if (!QueryRegKey(HKEY_LOCAL_MACHINE, TEXT("SOFTWARE\\Classes\\RenderDoc.RDCCapture.1\\DefaultIcon\\"), TEXT(""), renderDocPath))
 	{
 		// TODO: Didn't find renderdoc Installed
-		return;
+		return false;
 	}
 
-	std::string renderDocExe = "\\qrenderdoc.exe"; // Delete the exe file from the search directory
-	// Convert wstring to string
-	std::string searchPath = std::string(renderDocPath.cbegin(), renderDocPath.cend() - renderDocExe.size()) + "\\renderdoc.dll";
-	if (HMODULE mod = LoadLibraryA(searchPath.data()))
+	if (HMODULE mod = GetModuleHandleA("renderdoc.dll"))
+		//std::string renderDocExe = "\\qrenderdoc.exe"; // Delete the exe file from the search directory
+		//std::string searchPath = std::string(renderDocPath.cbegin(), renderDocPath.cend() - renderDocExe.size()) + "\\renderdoc.dll"; // Convert wstring to string
+		//if (HMODULE mod = LoadLibraryA(searchPath.data()))
 	{
 		pRENDERDOC_GetAPI RENDERDOC_GetAPI =
 			(pRENDERDOC_GetAPI)GetProcAddress(mod, "RENDERDOC_GetAPI");
-		int ret = RENDERDOC_GetAPI(eRENDERDOC_API_Version_1_5_0, (void**)&rdoc_api);
+		int ret = RENDERDOC_GetAPI(eRENDERDOC_API_Version_1_6_0, (void**)&rdoc_api);
 		assert(ret == 1);
 	}
 
-	rdoc_api->SetActiveWindow(device, wndHandle);
-	rdoc_api->SetCaptureFilePathTemplate("../../../Resources/RenderDocCapture/Capture");
+	if (!rdoc_api)
+	{
+		throw std::runtime_error("Didn't find renderdoc module");
+	}
+	else
+	{
+		rdoc_api->SetActiveWindow(device, wndHandle);
+		rdoc_api->SetCaptureFilePathTemplate("../../../Resources/RenderDocCapture/Capture");
+		RENDERDOC_InputButton keys[] = { RENDERDOC_InputButton::eRENDERDOC_Key_F11 };
+		rdoc_api->SetCaptureKeys(keys, 1);
+	}
 
-	Input::InputManager::RegisterCallback(Input::Bindings::F11, [this](){ this->TriggerRenderDocCapture(); });
+	Input::InputManager::RegisterCallback(Input::Bindings::F11, [this]() { this->TriggerRenderDocCapture(); });
+
+	return true;
 }
 
 void RenderDocPlugin::StartRenderDocCapture()
@@ -52,24 +66,13 @@ bool RenderDocPlugin::TriggerRenderDocCapture()
 {
 	if (!rdoc_api) return false;
 
-	rdoc_api->TriggerCapture();
+	//rdoc_api->TriggerCapture();
 	if (!rdoc_api->IsTargetControlConnected())
 		rdoc_api->LaunchReplayUI(1, nullptr);
 
 	rdoc_api->ShowReplayUI();
 
-	bool result = false;
-	//if (rdoc_api) uint32_t pid = rdoc_api->LaunchReplayUI(1, nullptr);
-	//// Launch RenderDoc UI to display the captured frame data.
-
-	//	// Check if connected
-	//	if (rdoc_api->IsTargetControlConnected())
-	//	{
-	//		// Show the UI
-	//		//if (rdoc_api->ShowReplayUI()) result = true;
-	//	}
-
-	return result;
+	return true;
 }
 
 void RenderDocPlugin::EndRenderDocCapture()

@@ -6,8 +6,8 @@ struct MVPMatrix
 {
     float4x4 model;
     float4x4 view;
-    float4x4 proj;
-    float4x4 t;
+    float4x4 orthogonalProj;
+    float4x4 perspectiveProj;
 };
 
 // From: https://github.com/Microsoft/DirectXShaderCompiler/blob/main/docs/SPIR-V.rst#hlsl-functions
@@ -31,9 +31,11 @@ void main(
     in float4 InPosition : ATTRIBUTE0, in float4 InUV : ATTRIBUTE1,
     out float4 OutPosition : SV_POSITION, out float4 OutUV : TEXCOORD0)
 {
-    //OutPosition = float4(InPosition.x * 2.0 - 1.0, 1.0 - 2.0 * InPosition.y, 0, 1); // 1 - y是为了flip Y轴？
-    float4x4 mvp = mvpMatrices.proj * cb.view * mvpMatrices.model;
-    OutPosition = mul(InPosition, mvp); // For column-major
-    //OutPosition = mul(mvpMatrices.model, float4(InPosition)); // For row-major
-    OutUV.xy = InUV.xy;
+    //下面为错误示范, 不要用这种方式算矩阵, 编译成SPIR-V的时候不会自动Tranpose
+    //float4x4 mvp = mvpMatrices.model * mvpMatrices.view * mvpMatrices.proj;
+    //OutPosition = mul(mvp, InPosition);
+    //float4x4 mvp = mvpMatrices.MVP;
+    
+    OutPosition = mul(mvpMatrices.orthogonalProj, mul(cb.view, mul(mvpMatrices.model, InPosition)));
+    OutUV = InUV;
 }

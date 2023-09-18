@@ -19,12 +19,14 @@ import Input;
 
 export class RenderDocPlugin
 {
-	RENDERDOC_API_1_5_0* rdoc_api = NULL;
+	RENDERDOC_API_1_6_0* rdoc_api = NULL;
 	RENDERDOC_DevicePointer device = NULL;
 	RENDERDOC_WindowHandle wndHandle = NULL;
 
 public:
-	RenderDocPlugin(void*, void*);
+	RenderDocPlugin(){}
+
+	bool HookRenderDoc(void*, void*);
 
 	// To start a frame capture, call StartFrameCapture.
 	// You can specify NULL, NULL for the device to capture on if you have only one device and

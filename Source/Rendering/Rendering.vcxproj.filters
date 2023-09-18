@@ -49,5 +49,6 @@
     <ClCompile Include="RenderBackend\Vulkan\VkRenderResource.ixx" />
     <ClCompile Include="RenderBackend\RenderResourceManager.ixx" />
     <ClCompile Include="RenderBackend\Vulkan\VkRenderResource.cpp" />
+    <ClCompile Include="RenderResources\Mesh.ixx" />
   </ItemGroup>
 </Project>

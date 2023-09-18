@@ -37,9 +37,9 @@ public:
 	{
 		for (auto& entry : registeredCallbacks)
 		{
-			if (bool res = enabledBindings[static_cast<uint8_t>(entry.first)])
+			if (enabledBindings[static_cast<uint8_t>(entry.first)])
 			{
-				res = false;
+				enabledBindings[static_cast<uint8_t>(entry.first)] = false;
 				entry.second();
 			}
 		}

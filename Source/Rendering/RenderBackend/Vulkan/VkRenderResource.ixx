@@ -89,7 +89,7 @@ public:
     VkResourceLayout(VkDevice device, VkPhysicalDevice pDev) : vkDevice(device) , vkPhysicalDevice(pDev) {}
     virtual ~VkResourceLayout();
 
-    virtual void CreateModelData(const Model&) final override;
+    virtual void CreateMeshData(const Mesh&) final override;
     virtual void CreatePushContant(const std::string&, uint32_t, void* = nullptr) final override;
     virtual void CreateConstantBuffer(const std::string&, uint32_t, uint32_t, void* = nullptr) final override;
 

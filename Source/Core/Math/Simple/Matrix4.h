@@ -36,16 +36,6 @@ public:
 	//Sets matrix to identity matrix (1.0 down the diagonal)
 	void	ToIdentity();
 
-	//Gets the OpenGL position vector (floats 12,13, and 14)
-	Vector3 GetPositionVector() const;
-	//Sets the OpenGL position vector (floats 12,13, and 14)
-	void	SetPositionVector(const Vector3 in);
-
-	//Gets the scale vector (floats 1,5, and 10)
-	Vector3 GetScalingVector() const;
-	//Sets the scale vector (floats 1,5, and 10)
-	void	SetScalingVector(const Vector3 &in);
-
 	//Creates a rotation matrix that rotates by 'degrees' around the 'axis'
 	//Analogous to glRotatef
 	static Matrix4 Rotation(float degrees, const Vector3 &axis);
@@ -57,11 +47,6 @@ public:
 	//Creates a translation matrix (identity, with 'translation' vector at
 	//floats 12, 13, and 14. Analogous to glTranslatef
 	static Matrix4 Translation(const Vector3 &translation);
-
-	//Creates a perspective matrix, with 'znear' and 'zfar' as the near and 
-	//far planes, using 'aspect' and 'fov' as the aspect ratio and vertical
-	//field of vision, respectively.
-	static Matrix4 Perspective(float znear, float zfar, float aspect, float fov);
 
 	//Creates an orthographic matrix with 'znear' and 'zfar' as the near and 
 	//far planes, and so on. Descriptive variable names are a good thing!

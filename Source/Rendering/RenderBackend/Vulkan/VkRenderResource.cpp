@@ -42,7 +42,7 @@ VkResourceLayout::~VkResourceLayout()
 	vkFreeMemory(vkDevice, ImageMemory, nullptr);
 }
 
-void VkResourceLayout::CreateModelData(const Model& m)
+void VkResourceLayout::CreateMeshData(const Mesh& m)
 {
 	auto vertexData = m.GetVertexData();
 	vertexCount = vertexData.size();

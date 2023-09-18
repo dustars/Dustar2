@@ -5,17 +5,16 @@
 	1. Use constexpr to store data?
 */
 
-
 #pragma once
 #include <cstddef>
 #include <math.h>
 #include <algorithm>
 
 //It's better to use define?
-static const float		PI = 3.14159265358979323846f;
+constexpr float	PI = 3.14159265358979323846f;
 
 //It's pi...divided by 360.0f!
-static const float		PI_OVER_360 = PI / 360.0f;
+constexpr float	PI_OVER_360 = PI / 360.0f;
 
 //Radians to degrees
 static inline double RadToDeg(const double deg)

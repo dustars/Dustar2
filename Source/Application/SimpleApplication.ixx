@@ -12,9 +12,6 @@ module;
 #define RENDER_DOC_ENABLE
 export module SimpleApplication;
 
-import VkRenderingBackend;
-import RenderDocPlugin;
-import WindowSystem;
 import MiddleRenderer;
 import Timer;
 import Input;
@@ -23,9 +20,7 @@ export class SimpleApplication
 {
 public:
     SimpleApplication()
-        : window(800, 600)
-        , renderDoc(RB::VkRBInterface::GetVkInstance(), (void*)&window.GetHWDN())
-		, renderer()
+        : renderer(float2(1000, 800))
     {
         renderer.Init();
     }
@@ -34,15 +29,16 @@ public:
     void Run()
     {
         Timer::SetFramerate(60);
-        while (window.Update(Timer::GetMS()))
+        while (renderer.WindowUpdate(Timer::GetMS()))
         {
-            if (Timer::Tick())
-            {
+            //如果限帧的话会出现大量问题……输入要和帧数系统解耦才行……
+            //if (Timer::Tick())
+            //{
                 //TODO: Error return code handling
                 Update(Timer::GetMS());
+    			Input::InputManager::Execute();
                 Render();
-            }
-			Input::InputManager::Execute();
+            //}
         }
     }
 
@@ -56,7 +52,5 @@ public:
     }
 private:
     // The order is important! Do not mess around!
-	Window::Win32Window window;
-    RenderDocPlugin renderDoc;
     MiddleRenderer renderer;
 };

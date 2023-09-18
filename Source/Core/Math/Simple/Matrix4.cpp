@@ -26,42 +26,7 @@ void Matrix4::ToZero()	{
 	}
 }
 
-Vector3 Matrix4::GetPositionVector() const{
-	return Vector3(values[12],values[13],values[14]);
-}
-
-void	Matrix4::SetPositionVector(const Vector3 in) {
-	values[12] = in.x;
-	values[13] = in.y;
-	values[14] = in.z;		
-}
-
-Vector3 Matrix4::GetScalingVector() const{
-	return Vector3(values[0],values[5],values[10]);
-}
-
-void	Matrix4::SetScalingVector(const Vector3 &in) {
-	values[0]  = in.x;
-	values[5]  = in.y;
-	values[10] = in.z;		
-}
-
-Matrix4 Matrix4::Perspective(float znear, float zfar, float aspect, float fov) {
-	Matrix4 m;
-
-	const float h = 1.0f / tan(fov*PI_OVER_360);
-	float neg_depth = znear-zfar;
-
-	m.values[0]		= h / aspect;
-	m.values[5]		= h;
-	m.values[10]	= (zfar + znear)/neg_depth;
-	m.values[11]	= -1.0f;
-	m.values[14]	= 2.0f*(znear*zfar)/neg_depth;
-	m.values[15]	= 0.0f;
-
-	return m;
-}
-
+//TODO: Delete me, matrix shouldn't relate to camera
 //http://www.opengl.org/sdk/docs/man/xhtml/glOrtho.xml
 Matrix4 Matrix4::Orthographic(float znear, float zfar,float right, float left, float top, float bottom)	{
 	Matrix4 m;
@@ -78,9 +43,10 @@ Matrix4 Matrix4::Orthographic(float znear, float zfar,float right, float left, f
 	return m;
 }
 
+//TODO: Delete me, matrix shouldn't relate to camera
 Matrix4 Matrix4::BuildViewMatrix(const Vector3 &from, const Vector3 &lookingAt, const Vector3 up /*= Vector3(1,0,0)*/ )	{
 	Matrix4 r;
-	r.SetPositionVector(Vector3(-from.x,-from.y,-from.z));
+	//r.SetPositionVector(Vector3(-from.x,-from.y,-from.z));
 
 	Matrix4 m;
 

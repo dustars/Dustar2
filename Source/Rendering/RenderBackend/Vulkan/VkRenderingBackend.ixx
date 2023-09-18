@@ -6,9 +6,9 @@
     5/10/2022 8:49:58 PM
 */
 export module VkRenderingBackend;
+export import RenderingBackend;
+export import CommonAbstractionClass;
 
-import CommonAbstractionClass;
-import RenderingBackend;
 import VkSurface;
 import VkCmdBuffer;
 import Pipeline;

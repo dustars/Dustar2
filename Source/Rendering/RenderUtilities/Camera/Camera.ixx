@@ -10,7 +10,7 @@
 
 export module Camera;
 
-import Math;
+import Core;
 
 export class Camera
 {
@@ -19,7 +19,10 @@ export class Camera
 	float3	position;
 	float3	lookDir;
 	float3	upDir;
+
+	mat4	viewMatrix;
 	mat4	projMatrix;
+	mat4	orthMatrix;
 
 public:
 	Camera(float pitch = 0, float yaw = 0, float3 position = float3(0, 0, 0));
@@ -27,10 +30,14 @@ public:
 
 	void UpdateCamera(float msec);
 
-	mat4 BuildViewMatrix();
+	mat4&	GetViewMatrix() { return viewMatrix; }
+	void	BuildViewMatrix();
 	
 	mat4&	GetProjMatrix() { return projMatrix; }
-	void	SetProjMatrix(mat4 projM) { projMatrix = projM; }
+	void	BuildProjMatrix(float znear, float zfar, float aspect, float fov);
+
+	mat4&	GetOrthMatrix() { return orthMatrix; }
+	void	BuildOrthogonalMatrix(float znear, float zfar, float right, float left, float top, float bottom);
 
 	float3	GetPosition() const { return position; }
 	void	SetPosition(float3 val) { position = val; }

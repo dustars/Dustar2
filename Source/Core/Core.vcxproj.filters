@@ -16,10 +16,10 @@
     <ClCompile Include="Math\Math.ixx" />
     <ClCompile Include="Math\Simple\Matrix4.cpp" />
     <ClCompile Include="Math\Simple\Quaternion.cpp" />
-    <ClCompile Include="Data\Model.ixx" />
     <ClCompile Include="Utilities\Timer.ixx" />
     <ClCompile Include="Input\Input.cpp" />
     <ClCompile Include="Utilities\RenderDoc\RenderDocPlugin.cpp" />
+    <ClCompile Include="Math\CommonSymbols.ixx" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Utilities\stb\stb_image.h" />

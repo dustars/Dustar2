@@ -11,7 +11,12 @@ module;
 #include "Simple/Math.h"
 export module Math;
 
+export import CommonSymbols;
+
 export typedef Vector2 float2;
 export typedef Vector3 float3;
 export typedef Vector4 float4;
 export typedef Matrix4 mat4;
+
+export uint16_t;
+export uint32_t;

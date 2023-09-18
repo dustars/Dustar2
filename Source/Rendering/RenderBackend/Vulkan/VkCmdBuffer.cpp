@@ -92,6 +92,7 @@ void VkCmdBuffer::EndRenderPass()
 
 void VkCmdBuffer::Draw(Pipeline& pipeline)
 {
+	//TODO: 形参就该是VkGraphicsPipeline...现在这样不合理
 	VkGraphicsPipeline& p = dynamic_cast<VkGraphicsPipeline&>(pipeline);
 
 	vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, p.GetPipeline());

@@ -12,10 +12,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Core.ixx" />
-    <ClCompile Include="Data\Model.ixx">
-      <SubType>
-      </SubType>
-    </ClCompile>
     <ClCompile Include="Input\Input.cpp">
       <SubType>
       </SubType>
@@ -24,6 +20,7 @@
     <ClCompile Include="Input\Bindings.ixx" />
     <ClCompile Include="Input\Keyboard.ixx" />
     <ClCompile Include="Input\Mouse.ixx" />
+    <ClCompile Include="Math\CommonSymbols.ixx" />
     <ClCompile Include="Math\Math.ixx">
       <SubType>
       </SubType>

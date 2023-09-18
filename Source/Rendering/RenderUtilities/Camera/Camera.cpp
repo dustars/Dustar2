@@ -8,15 +8,16 @@
 
 module;
 #define FACTOR 0.01f
+#include <math.h>;
 module Camera;
-
-import Input;
 
 Camera::Camera(float pitch, float yaw, float3 position) :
 	pitch(pitch),
 	yaw(yaw),
 	position(position)
-{}
+{
+	BuildViewMatrix();
+}
 
 void Camera::UpdateCamera(float msec)
 {
@@ -43,13 +44,46 @@ void Camera::UpdateCamera(float msec)
 	if (Input::InputManager::GetKeyPressed(Input::Bindings::SHIFT)) {
 		position.y -= msec;
 	}
+
+	// TODO: Should I put it into another method?
+	BuildViewMatrix();
 }
 
-mat4 Camera::BuildViewMatrix()
+void Camera::BuildViewMatrix()
 {
-	return	mat4::Rotation(-pitch, Vector3(1, 0, 0)) *
+	viewMatrix =
+		mat4::Rotation(-pitch, Vector3(1, 0, 0)) *
 		mat4::Rotation(-yaw, Vector3(0, 1, 0)) *
 		mat4::Translation(-position);
+}
+
+void Camera::BuildProjMatrix(float znear, float zfar, float aspect, float fov)
+{
+	projMatrix.ToIdentity();
+	
+	const float h = 1.0f / tan(fov * PI_OVER_360);
+	float neg_depth = znear - zfar;
+
+	projMatrix.values[0] = h / aspect;
+	projMatrix.values[5] = h;
+	projMatrix.values[10] = (zfar + znear) / neg_depth;
+	projMatrix.values[11] = -1.0f;
+	projMatrix.values[14] = 2.0f * (znear * zfar) / neg_depth;
+	projMatrix.values[15] = 0.0f;
+}
+
+void Camera::BuildOrthogonalMatrix(float znear, float zfar, float right, float left, float top, float bottom)
+{
+	orthMatrix.ToIdentity();
+
+	orthMatrix.values[0] = 2.0f / (right - left);
+	orthMatrix.values[5] = 2.0f / (top - bottom);
+	orthMatrix.values[10] = -2.0f / (zfar - znear);
+
+	orthMatrix.values[12] = -(right + left) / (right - left);
+	orthMatrix.values[13] = -(top + bottom) / (top - bottom);
+	orthMatrix.values[14] = -(zfar + znear) / (zfar - znear);
+	orthMatrix.values[15] = 1.0f;
 }
 
 void Camera::CameraControlUpdate(float msec)

@@ -9,10 +9,21 @@
 module;
 #define WINDOW_APP
 #define VK_USE_PLATFORM_WIN32_KHR
+
+#define VK_API_VERSION_MAJOR(version) (((uint32_t)(version) >> 22U) & 0x7FU)
+#define VK_API_VERSION_MINOR(version) (((uint32_t)(version) >> 12U) & 0x3FFU)
+#define VK_API_VERSION_PATCH(version) ((uint32_t)(version) & 0xFFFU)
+
+#define VK_MAKE_API_VERSION(variant, major, minor, patch) \
+    ((((uint32_t)(variant)) << 29U) | (((uint32_t)(major)) << 22U) | (((uint32_t)(minor)) << 12U) | ((uint32_t)(patch)))
+
+#define VK_API_VERSION_1_1 VK_MAKE_API_VERSION(0, 1, 1, 0)
+#define VK_API_VERSION_1_2 VK_MAKE_API_VERSION(0, 1, 2, 0)
+#define VK_API_VERSION_1_3 VK_MAKE_API_VERSION(0, 1, 3, 0)
+
 module VkRenderingBackend;
 
 import Input;
-import RenderDocPlugin;
 import <vulkan\vulkan.h>;
 
 namespace RB
@@ -129,8 +140,14 @@ void VkRBInterface::InitVulkanInstance()
 	appInfo.applicationVersion = 1;
 	appInfo.pEngineName = "NoEngine";
 	appInfo.engineVersion = 0;
-	// 操 这个apiVersion还挺复杂的 建议看文档……
-	appInfo.apiVersion = 0;
+
+	uint32_t version;
+	auto info = vkEnumerateInstanceVersion(&version);
+	if (VK_SUCCESS != info)
+	{
+		throw std::runtime_error("Version search failed!");
+	}
+	appInfo.apiVersion = version;
 
 	VkInstanceCreateInfo createInfo;
 	createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
@@ -142,7 +159,7 @@ void VkRBInterface::InitVulkanInstance()
 	createInfo.enabledExtensionCount = static_cast<uint32_t>(enabledInstanceExtensions.size());
 	createInfo.ppEnabledExtensionNames = enabledInstanceExtensions.data();
 
-	auto info = vkCreateInstance(&createInfo, nullptr, &VkRBInterface::vkInstance);
+	info = vkCreateInstance(&createInfo, nullptr, &VkRBInterface::vkInstance);
 
 	if (VK_SUCCESS != info)
 	{
@@ -225,8 +242,9 @@ void VkRBInterface::InitVulkanLogicalDevice()
 	// TODO: 可以把Physical Device创建的feature直接拿来用,！但会增加性能开销！
 	// 一个更加自然的实现就是用到什么就enable什么feature,但这个就比较复杂了……
 	createInfo.pEnabledFeatures = nullptr;
-
-	if (VK_SUCCESS != vkCreateDevice(vkPhysicalDevice, &createInfo, nullptr, &vkDevice))
+	
+	auto result = vkCreateDevice(vkPhysicalDevice, &createInfo, nullptr, &vkDevice);
+	if (VK_SUCCESS != result)
 	{
 		throw std::runtime_error("Failed to create logical device");
 	}
@@ -261,6 +279,7 @@ void VkRBInterface::EnableInstanceLayers(std::vector<const char*>& enabledInstan
 	//TODO: 后期会需要一个机制在创建APP前确定需要哪些layers & extensions
 #ifndef NDEBUG
 	enabledInstanceLayers.push_back("VK_LAYER_KHRONOS_validation");
+	enabledInstanceLayers.push_back("VK_LAYER_RENDERDOC_Capture");
 #endif
 
 	uint32_t layerCount;

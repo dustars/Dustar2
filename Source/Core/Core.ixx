@@ -14,5 +14,7 @@
 
 export module Core;
 
+export import std;
 export import Input;
+export import Math;
 //export import TypeDefines;
