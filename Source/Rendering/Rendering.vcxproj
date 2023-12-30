@@ -186,14 +186,6 @@
       <SubType>
       </SubType>
     </ClCompile>
-    <ClCompile Include="RenderUtilities\Camera\Camera.cpp">
-      <SubType>
-      </SubType>
-    </ClCompile>
-    <ClCompile Include="RenderUtilities\Camera\Camera.ixx">
-      <SubType>
-      </SubType>
-    </ClCompile>
     <ClCompile Include="RenderUtilities\WindowSystem\WindowSystem_WindowBase.ixx" />
     <ClCompile Include="RenderUtilities\WindowSystem\WindowSystem.ixx" />
     <ClCompile Include="RenderUtilities\WindowSystem\WindowSystem_Win32.cpp" />

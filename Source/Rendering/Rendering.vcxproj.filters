@@ -43,8 +43,6 @@
     <ClCompile Include="RenderBackend\Pipeline.ixx" />
     <ClCompile Include="RenderBackend\Vulkan\VkGraphicsPipeline.cpp" />
     <ClCompile Include="RenderBackend\CommonAbstractionClass.ixx" />
-    <ClCompile Include="RenderUtilities\Camera\Camera.ixx" />
-    <ClCompile Include="RenderUtilities\Camera\Camera.cpp" />
     <ClCompile Include="RenderBackend\RenderResource.ixx" />
     <ClCompile Include="RenderBackend\Vulkan\VkRenderResource.ixx" />
     <ClCompile Include="RenderBackend\RenderResourceManager.ixx" />

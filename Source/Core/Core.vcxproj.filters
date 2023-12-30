@@ -20,6 +20,10 @@
     <ClCompile Include="Input\Input.cpp" />
     <ClCompile Include="Utilities\RenderDoc\RenderDocPlugin.cpp" />
     <ClCompile Include="Math\CommonSymbols.ixx" />
+    <ClCompile Include="TempGameData\TempGameData.ixx" />
+    <ClCompile Include="TempGameData\Camera.cpp" />
+    <ClCompile Include="TempGameData\Camera.ixx" />
+    <ClCompile Include="TempGameData\TempGameData.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Utilities\stb\stb_image.h" />

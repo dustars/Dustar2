@@ -36,6 +36,6 @@ void main(
     //OutPosition = mul(mvp, InPosition);
     //float4x4 mvp = mvpMatrices.MVP;
     
-    OutPosition = mul(mvpMatrices.orthogonalProj, mul(cb.view, mul(mvpMatrices.model, InPosition)));
+    OutPosition = mul(mvpMatrices.perspectiveProj, mul(cb.view, mul(mvpMatrices.model, InPosition)));
     OutUV = InUV;
 }

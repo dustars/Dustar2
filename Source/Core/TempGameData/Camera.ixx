@@ -12,6 +12,13 @@ export module Camera;
 
 import Core;
 
+export struct CameraRenderData
+{
+	mat4	viewMatrix;
+	mat4	orthMatrix;
+	mat4	projMatrix;
+};
+
 export class Camera
 {
 	float	yaw;
@@ -27,6 +34,10 @@ export class Camera
 public:
 	Camera(float pitch = 0, float yaw = 0, float3 position = float3(0, 0, 0));
 	~Camera(void) {};
+
+	void BuildRenderCameraData();
+	//Public Data for Renderer only
+	std::shared_ptr<CameraRenderData> cameraRenderData;
 
 	void UpdateCamera(float msec);
 

@@ -14,15 +14,23 @@ module Camera;
 Camera::Camera(float pitch, float yaw, float3 position) :
 	pitch(pitch),
 	yaw(yaw),
-	position(position)
+	position(position),
+	cameraRenderData(std::make_shared<CameraRenderData>())
 {
 	BuildViewMatrix();
 }
 
+void Camera::BuildRenderCameraData()
+{
+	cameraRenderData->viewMatrix = viewMatrix;
+	cameraRenderData->orthMatrix = orthMatrix;
+	cameraRenderData->projMatrix = projMatrix;
+}
+
 void Camera::UpdateCamera(float msec)
 {
-	yaw += 0.1 * Input::InputManager::GetMouseXOffset();
-	pitch += 0.1 * Input::InputManager::GetMouseYOffset();
+	yaw += 0.1 * FACTOR * Input::InputManager::GetMouseXOffset();
+	pitch -= 0.1 * FACTOR * Input::InputManager::GetMouseYOffset();
 
 	if (Input::InputManager::GetKeyPressed(Input::Bindings::W)) {
 		position += (Matrix4::Rotation(yaw, Vector3(0, 1, 0)) * Vector3(0, 0, -1) * msec) * FACTOR;
@@ -47,6 +55,8 @@ void Camera::UpdateCamera(float msec)
 
 	// TODO: Should I put it into another method?
 	BuildViewMatrix();
+	// Update Render Data
+	BuildRenderCameraData();
 }
 
 void Camera::BuildViewMatrix()

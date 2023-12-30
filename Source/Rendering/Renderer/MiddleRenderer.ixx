@@ -12,6 +12,8 @@ export module MiddleRenderer;
 import Core;
 import RendererBase;
 
+import Camera;
+
 export class MiddleRenderer : public RB::RendererBase
 {
 public:
@@ -20,4 +22,10 @@ public:
 	virtual void Init() final override;
 	virtual bool Update(float) final override;
 	virtual bool Render() final override;
+
+    //Camera data needs to be set before rendering!
+    void SetCameraRenderData(std::shared_ptr<CameraRenderData> cameraData) { camera = cameraData; }
+
+private:
+    std::shared_ptr<CameraRenderData> camera;
 };

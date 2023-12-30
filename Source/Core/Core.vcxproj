@@ -27,6 +27,13 @@
     </ClCompile>
     <ClCompile Include="Math\Simple\Matrix4.cpp" />
     <ClCompile Include="Math\Simple\Quaternion.cpp" />
+    <ClCompile Include="TempGameData\Camera.cpp" />
+    <ClCompile Include="TempGameData\Camera.ixx" />
+    <ClCompile Include="TempGameData\TempGameData.cpp" />
+    <ClCompile Include="TempGameData\TempGameData.ixx">
+      <SubType>
+      </SubType>
+    </ClCompile>
     <ClCompile Include="Utilities\RenderDoc\RenderDocPlugin.cpp">
       <SubType>
       </SubType>

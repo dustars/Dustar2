@@ -60,17 +60,16 @@ using namespace RB;
 
 MiddleRenderer::MiddleRenderer(float2 windowSize)
     : RendererBase(windowSize)
-{
-	camera.SetYaw(0.f);
-	camera.SetPitch(0.f);
-	camera.SetPosition(float3(0.f, 0.f, 10.f));
-	camera.BuildViewMatrix();
-	camera.BuildProjMatrix(1.f, 100.0f, 1000/800, 45.0f);
-	camera.BuildOrthogonalMatrix(0.f, 10.f, -10.f, 10.f, 8.f, -8.f);
-}
+{}
 
 void MiddleRenderer::Init()
 {
+	//Check
+	if (camera == nullptr)
+	{
+		throw std::runtime_error("MiddleRenderer: Camera is not set up!");
+	}
+
 	constexpr float	PI_OVER_360 = 3.14159265358979323846f / 360.0f;
 
 	RenderResourceManager resourceManager(RBI);
@@ -80,13 +79,13 @@ void MiddleRenderer::Init()
 	// TODO 我显卡居然是256字节对齐？？？？？？
 	static std::vector<mat4> matrices;
 
-	mat4 modMatrix = mat4::Rotation(45.f, float3(0, 1, 0));// *mat4::Scale(float3(2, 2, 2));
+	mat4 modMatrix = mat4::Rotation(45.f, float3(0, 1, 0)) * mat4::Scale(float3(1, 1, 1));
 
 	// Uniform Buffer Matrices
 	matrices.push_back(modMatrix);
-	matrices.push_back(camera.GetViewMatrix());
-	matrices.push_back(camera.GetOrthMatrix());
-	matrices.push_back(camera.GetProjMatrix()); //Dumpy matrix, no actual purpose, just for 256 bytes alignment
+	matrices.push_back(camera->viewMatrix);
+	matrices.push_back(camera->orthMatrix);
+	matrices.push_back(camera->projMatrix); //Dumpy matrix, no actual purpose, just for 256 bytes alignment
 
 	// Model
 	Mesh m;
@@ -95,7 +94,7 @@ void MiddleRenderer::Init()
 
 	ResourceLayout* layout = resourceManager.CreateResourceLayout();
 	layout->CreateMeshData(m);
-	layout->CreatePushContant("mvp", sizeof(mat4), camera.GetViewMatrix().values);
+	layout->CreatePushContant("mvp", sizeof(mat4), camera->viewMatrix.values);
 	//layout->CreatePushContant("mvp", sizeof(mat4), &projGLM);
 	layout->CreateConstantBuffer("MVPMatrix", sizeof(mat4), sizeof(mat4) * 4, matrices.data());
 	//layout->CreateConstantBuffer("testMatrix", sizeof(mat4), sizeof(mat4), modelMatrix.values);
@@ -118,7 +117,6 @@ void MiddleRenderer::Init()
 
 bool MiddleRenderer::Update(float ms)
 {
-	camera.UpdateCamera(ms);
 	return RBI->Update(ms);
 }
 

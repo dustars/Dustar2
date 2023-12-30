@@ -14,7 +14,6 @@ import Core;
 import RenderDocPlugin;
 import WindowSystem;
 import VkRenderingBackend;
-import Camera;
 //TODO: 有生之年系列
 //import DxRenderingBackend;
 
@@ -46,13 +45,10 @@ public:
         else // Metal
         {
         }
-
-        renderDoc.StartRenderDocCapture();
     }
 
     ~RendererBase()
     {
-        renderDoc.EndRenderDocCapture();
         delete RBI;
     }
 
@@ -65,9 +61,6 @@ public:
 protected:
     // Rendering Backend
     RBInterface* RBI;
-
-    // Camera
-    Camera camera;
 
     // Window
     Window::Win32Window window;
