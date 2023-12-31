@@ -22,7 +22,7 @@ namespace GameData
     public:
         TempGameData();
 
-        void Update(float ms);
+        void Update(double ms);
 
         std::shared_ptr<CameraRenderData> GetCameraRenderData() const;
 

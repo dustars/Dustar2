@@ -17,10 +17,12 @@ import Camera;
 export class MiddleRenderer : public RB::RendererBase
 {
 public:
-    MiddleRenderer(float2 windowSize = float2(1000, 800));
+    MiddleRenderer(void* wndHandleIn = nullptr)
+        : RendererBase(wndHandleIn)
+    {}
 
 	virtual void Init() final override;
-	virtual bool Update(float) final override;
+	virtual bool Update(double) final override;
 	virtual bool Render() final override;
 
     //Camera data needs to be set before rendering!

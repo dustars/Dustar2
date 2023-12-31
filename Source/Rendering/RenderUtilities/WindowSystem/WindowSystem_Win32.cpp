@@ -57,6 +57,7 @@ Win32Window::Win32Window(uint32_t width, uint32_t height)
     windowInstance = this;
 }
 
+//TODO:真的应该在这个地方吗?
 void Win32Window::InitWindowSurface(VkInstance vkInstance, VkSurfaceKHR& surface)
 {
 	VkWin32SurfaceCreateInfoKHR createInfo;

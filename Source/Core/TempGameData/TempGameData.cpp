@@ -18,7 +18,7 @@ namespace GameData
         CreateCamera();
     }
 
-    void TempGameData::Update(float ms)
+    void TempGameData::Update(double ms)
     {
         camera.UpdateCamera(ms);
     }

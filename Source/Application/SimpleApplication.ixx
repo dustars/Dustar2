@@ -8,58 +8,70 @@
     Notes:
 */
 
-module;
-#define RENDER_DOC_ENABLE
 export module SimpleApplication;
 
-import MiddleRenderer;
 import Timer;
 import Input;
+import WindowSystem;
 
 import TempGameData;
+import MiddleRenderer;
 
 export class SimpleApplication
 {
 public:
-    SimpleApplication()
-        : renderer(float2(1000, 800)),
-          gameData()
+    SimpleApplication() :
+        window(1000, 800),
+        renderer((void*)&window.GetHWDN()),
+        gameData()
     {
         renderer.SetCameraRenderData(gameData.GetCameraRenderData());
 
         // 还是有个顺序问题,需要最后Init Renderer,因为一些比如Camera数据需要先初始化,然后Renderer才拿来用
         renderer.Init();
     }
+
     ~SimpleApplication() {}
 
     void Run()
     {
-        Timer::SetFramerate(60);
-        while (renderer.WindowUpdate(Timer::GetMS()))
+        //Configuration goes here, or some pre-executions to do
+        Timer::SetFramerate(0);
+
+        // Core loop of the application
+        AppLoop();
+    }
+
+    bool AppLoop()
+    {
+        //TODO: 此时就应该Game Thread和render thread分开跑了, 以不同的帧率更新
+        //代码类似如下:
+        // if(satisfy gameRate) GameThread::Update()
+        // ----Data Update----
+        // if(satisfy renderRate) RenderThread::Update()
+
+        //TODO: If window exists
+        while (window.Update(Timer::GetMS()))
         {
-            //如果限帧的话会出现大量问题……输入要和帧数系统解耦才行……
-            //if (Timer::Tick())
-            //{
-                //TODO: Error return code handling
-                Update(Timer::GetMS());
+            double ms = Timer::GetMS();
+            // window系统先处理输入
+            Input::InputManager::Execute();
 
-                //Input的更新不应该在这里被帧率限制
-    			Input::InputManager::Execute();
-                Render();
-            //}
+            // 游戏相关的临时数据更新
+            gameData.Update(ms);
+
+            // 渲染
+            if (Timer::Tick()) renderer.Render();
         }
+
+        return true;
     }
 
-    bool Update(float ms)
-    {
-        gameData.Update(ms);
-        return renderer.Update(ms);
-    }
-    bool Render()
-    {
-        return renderer.Render();
-    }
 private:
+    // Window
+    // TODO: 隐藏鼠标
+    Window::Win32Window window;
+
     // The order is important! Do not mess around!
     MiddleRenderer renderer;
 

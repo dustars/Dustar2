@@ -65,6 +65,8 @@ public:
 
 private:
 	// Mouse Position
+	// TODO:这里的inline只是为了初始化,不能去掉是因为什么odr-use的backward compatibility, 总之还挺复杂...看了一圈半懂不懂
+	// 等以后功力深厚了再看看怎么处理吧
 	inline static float offX, offY = 0.f;
 	inline static float posX, posY = 0.f;
 	// Mouse wheel movement

@@ -17,6 +17,7 @@ export enum class Bindings : uint8_t
 
 	//----------------Keyboard----------------
 	// functional
+	SPACE,					// SPACE key
 	SHIFT,					// SHIFT key
 	CONTROL,				// CTRL key
 	ALT,					// ALT key

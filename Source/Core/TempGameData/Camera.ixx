@@ -39,7 +39,7 @@ public:
 	//Public Data for Renderer only
 	std::shared_ptr<CameraRenderData> cameraRenderData;
 
-	void UpdateCamera(float msec);
+	void UpdateCamera(double msec);
 
 	mat4&	GetViewMatrix() { return viewMatrix; }
 	void	BuildViewMatrix();

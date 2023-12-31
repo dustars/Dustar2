@@ -23,27 +23,33 @@ namespace RB
 export class RendererBase
 {
 public:
-    // Initialize Device with given API (Vulkan/DX12/Metal)
-    RendererBase(float2 windowSize = float2(1000, 800))
-        : window(windowSize.x, windowSize.y)
-        , renderDoc()
+    RendererBase()
     {
-        //TODO: 并没有对切换图形API的强需求
+        // Initialize Device with given API (Vulkan/DX12/Metal)
+        //TODO: Move to configuration file
         RENDER_API renderAPI = RENDER_API::VULKAN;
 
         if (renderAPI == RENDER_API::VULKAN)
         {
             RBI = new VkRBInterface();
-            if(!renderDoc.HookRenderDoc(RB::VkRBInterface::GetVkInstance(), (void*)&window.GetHWDN()))
-            {
-                throw std::runtime_error("RenderDoc is not hooked under Vulkan API");
-            }
         }
         else if (renderAPI == RENDER_API::D3D12)
         {
         }
-        else // Metal
+        else // Metal if it ever existed...
         {
+        }
+    }
+
+    // Delegating constructor to initialize renderDoc
+    RendererBase(void* wndHandleIn) : RendererBase()
+    {
+        if (wndHandleIn)
+        {
+            if (!renderDoc.HookRenderDoc(RB::VkRBInterface::GetVkInstance(), wndHandleIn))
+            {
+                throw std::runtime_error("RenderDoc is not hooked under Vulkan API");
+            }
         }
     }
 
@@ -53,17 +59,13 @@ public:
     }
 
     virtual void Init() = 0;
-    virtual bool Update(float) = 0;
+    //TODO: Should renderer be responsible to update some data?
+    virtual bool Update(double) = 0;
     virtual bool Render() = 0;
-
-    bool WindowUpdate(float ms) { return window.Update(ms); }
 
 protected:
     // Rendering Backend
     RBInterface* RBI;
-
-    // Window
-    Window::Win32Window window;
 
     RenderDocPlugin renderDoc;
 };

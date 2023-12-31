@@ -31,6 +31,7 @@ public:
 
 	virtual bool Update(float) const final override;
 
+	//TODO:真的应该在这里吗?
 	static void InitWindowSurface(VkInstance, VkSurfaceKHR&);
 
 	HINSTANCE& GetInstance() { return instance; }
@@ -41,7 +42,9 @@ private:
 	HINSTANCE instance;
 	HWND windowHandle;
 
-	// Global window Instance;
+	// Global window Instance
+	// TODO:这里的inline只是为了初始化,不能去掉是因为什么odr-use的backward compatibility, 总之还挺复杂...看了一圈半懂不懂
+	// 等以后功力深厚了再看看怎么处理吧
 	inline static Win32Window* windowInstance = nullptr;
 };
 

@@ -27,6 +27,7 @@ void InputManager::UpdateBindingWindows(uint32_t vkCode, bool bEnable)
     case VK_XBUTTON1: {enabledBindings[static_cast<uint8_t>(Bindings::X1BUTTON)] = bEnable; break; }
     case VK_XBUTTON2: {enabledBindings[static_cast<uint8_t>(Bindings::X2BUTTON)] = bEnable; break; }
 
+    case VK_SPACE : {enabledBindings[static_cast<uint8_t>(Bindings::SPACE)] = bEnable; break; }
     case VK_SHIFT: {enabledBindings[static_cast<uint8_t>(Bindings::SHIFT)] = bEnable; break; }
     case VK_CONTROL: {enabledBindings[static_cast<uint8_t>(Bindings::CONTROL)] = bEnable; break; }
     case VK_MENU: {enabledBindings[static_cast<uint8_t>(Bindings::ALT)] = bEnable; break; }

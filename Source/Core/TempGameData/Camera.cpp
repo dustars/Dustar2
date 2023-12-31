@@ -27,30 +27,30 @@ void Camera::BuildRenderCameraData()
 	cameraRenderData->projMatrix = projMatrix;
 }
 
-void Camera::UpdateCamera(float msec)
+void Camera::UpdateCamera(double msec)
 {
-	yaw += 0.1 * FACTOR * Input::InputManager::GetMouseXOffset();
-	pitch -= 0.1 * FACTOR * Input::InputManager::GetMouseYOffset();
+	yaw += 0.5 * FACTOR * Input::InputManager::GetMouseXOffset();
+	pitch -= 0.5 * FACTOR * Input::InputManager::GetMouseYOffset();
 
 	if (Input::InputManager::GetKeyPressed(Input::Bindings::W)) {
 		position += (Matrix4::Rotation(yaw, Vector3(0, 1, 0)) * Vector3(0, 0, -1) * msec) * FACTOR;
 	}
-	if (Input::InputManager::GetKeyPressed(Input::Bindings::A)) {
+	if (Input::InputManager::GetKeyPressed(Input::Bindings::S)) {
 		position -= (Matrix4::Rotation(yaw, Vector3(0, 1, 0)) * Vector3(0, 0, -1) * msec) * FACTOR;
 	}
 
-	if (Input::InputManager::GetKeyPressed(Input::Bindings::S)) {
+	if (Input::InputManager::GetKeyPressed(Input::Bindings::A)) {
 		position += (Matrix4::Rotation(yaw, Vector3(0, 1, 0)) * Vector3(-1, 0, 0) * msec) * FACTOR;
 	}
 	if (Input::InputManager::GetKeyPressed(Input::Bindings::D)) {
 		position -= (Matrix4::Rotation(yaw, Vector3(0, 1, 0)) * Vector3(-1, 0, 0) * msec) * FACTOR;
 	}
 
-	//if (Input::InputManager::GetKeyPressed(Bindings::SPACE)) {
-	//	position.y += msec / UPDATE_MULTIPLIER;
-	//}
+	if (Input::InputManager::GetKeyPressed(Input::Bindings::SPACE)) {
+		position.y -= msec * FACTOR;
+	}
 	if (Input::InputManager::GetKeyPressed(Input::Bindings::SHIFT)) {
-		position.y -= msec;
+		position.y += msec * FACTOR;
 	}
 
 	// TODO: Should I put it into another method?

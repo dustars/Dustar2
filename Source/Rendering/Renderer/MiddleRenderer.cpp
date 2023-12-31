@@ -55,12 +55,9 @@ import CmdBuffer;
 import Pipeline;
 import RenderResource;
 import RenderResourceManager;
+import CommonAbstractionClass;
 
 using namespace RB;
-
-MiddleRenderer::MiddleRenderer(float2 windowSize)
-    : RendererBase(windowSize)
-{}
 
 void MiddleRenderer::Init()
 {
@@ -115,7 +112,7 @@ void MiddleRenderer::Init()
 	);
 }
 
-bool MiddleRenderer::Update(float ms)
+bool MiddleRenderer::Update(double ms)
 {
 	return RBI->Update(ms);
 }
