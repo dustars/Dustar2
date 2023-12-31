@@ -4,4 +4,4 @@
 
 # 当前进展:
 ### Vulkan下的三角形:
-![Vulkan Triangle](Resources/Images/HelloWorld.png)
+![Vulkan Triangle](Resources/Images/Dustar2_Cube.gif)
