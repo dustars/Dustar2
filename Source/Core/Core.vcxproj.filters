@@ -24,6 +24,7 @@
     <ClCompile Include="TempGameData\Camera.cpp" />
     <ClCompile Include="TempGameData\Camera.ixx" />
     <ClCompile Include="TempGameData\TempGameData.cpp" />
+    <ClCompile Include="Input\RawInputDeviceBase.ixx" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Utilities\stb\stb_image.h" />

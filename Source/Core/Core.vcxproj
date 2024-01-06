@@ -20,6 +20,10 @@
     <ClCompile Include="Input\Bindings.ixx" />
     <ClCompile Include="Input\Keyboard.ixx" />
     <ClCompile Include="Input\Mouse.ixx" />
+    <ClCompile Include="Input\RawInputDeviceBase.ixx">
+      <SubType>
+      </SubType>
+    </ClCompile>
     <ClCompile Include="Math\CommonSymbols.ixx" />
     <ClCompile Include="Math\Math.ixx">
       <SubType>

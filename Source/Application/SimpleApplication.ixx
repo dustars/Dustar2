@@ -51,14 +51,17 @@ public:
         // if(satisfy renderRate) RenderThread::Update()
 
         //TODO: If window exists
+        //Main loop
         while (window.Update(Timer::GetMS()))
         {
             double ms = Timer::GetMS();
             // window系统先处理输入
             Input::InputManager::Execute();
-
             // 游戏相关的临时数据更新
             gameData.Update(ms);
+            // Post Loop functions 执行本帧(game?)的善后工作
+            Input::InputManager::ResetMouse();
+
 
             // 渲染
             if (Timer::Tick()) renderer.Render();

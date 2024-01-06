@@ -11,6 +11,8 @@
 export module Camera;
 
 import Core;
+//TODO:相机的输入处理要在这里吗?还是统一在某个地方?
+import Input;
 
 export struct CameraRenderData
 {

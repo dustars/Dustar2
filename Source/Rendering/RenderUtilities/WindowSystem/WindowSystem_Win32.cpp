@@ -8,6 +8,7 @@
 
 module;
 #include <windowsx.h>
+#include <strsafe.h>
 #define VK_USE_PLATFORM_WIN32_KHR
 #include <vulkan\vulkan.h>
 module WindowSystem:Win32;
@@ -55,6 +56,24 @@ Win32Window::Win32Window(uint32_t width, uint32_t height)
 
     if(!windowHandle) throw std::runtime_error("Cannot Create Window");
     windowInstance = this;
+
+    //Input
+    RAWINPUTDEVICE Rid[2];
+
+    Rid[0].usUsagePage = 0x01;          // HID_USAGE_PAGE_GENERIC
+    Rid[0].usUsage = 0x02;              // HID_USAGE_GENERIC_MOUSE
+    Rid[0].dwFlags = RIDEV_NOLEGACY;    // adds mouse and also ignores legacy mouse messages
+    Rid[0].hwndTarget = 0;
+
+    Rid[1].usUsagePage = 0x01;          // HID_USAGE_PAGE_GENERIC
+    Rid[1].usUsage = 0x06;              // HID_USAGE_GENERIC_KEYBOARD
+    Rid[1].dwFlags = RIDEV_NOLEGACY;    // adds keyboard and also ignores legacy keyboard messages
+    Rid[1].hwndTarget = 0;
+
+    if (RegisterRawInputDevices(Rid, 2, sizeof(Rid[0])) == FALSE)
+    {
+        //registration failed. Call GetLastError for the cause of the error
+    }
 }
 
 //TODO:真的应该在这个地方吗?
@@ -86,6 +105,7 @@ bool Win32Window::Update(float ms) const
         TranslateMessage(&msg);
         DispatchMessage(&msg);
     }
+
     return bContinue;
 }
 
@@ -99,14 +119,68 @@ LRESULT Win32Window::WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 		{
 			CREATESTRUCT* pCreate = (CREATESTRUCT*)lParam;
 			Win32Window* pThis = (Win32Window*)pCreate->lpCreateParams;
-			SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR)pThis);
+            SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR)pThis);
+			
             return 0;
 		}
+        case WM_INPUT:
+        {
+            UINT dwSize;
+
+            GetRawInputData((HRAWINPUT)lParam, RID_INPUT, NULL, &dwSize, sizeof(RAWINPUTHEADER));
+            LPBYTE lpb = new BYTE[dwSize];
+            if (lpb == NULL)
+            {
+                return 0;
+            }
+
+            if (GetRawInputData((HRAWINPUT)lParam, RID_INPUT, lpb, &dwSize, sizeof(RAWINPUTHEADER)) != dwSize)
+                OutputDebugString(TEXT("GetRawInputData does not return correct size !\n"));
+
+            RAWINPUT* raw = (RAWINPUT*)lpb;
+
+            if (raw->header.dwType == RIM_TYPEKEYBOARD)
+            {
+                //hResult = StringCchPrintf(szTempOutput, STRSAFE_MAX_CCH,
+                //    TEXT(" Kbd: make=%04x Flags:%04x Reserved:%04x ExtraInformation:%08x, msg=%04x VK=%04x \n"),
+                //    raw->data.keyboard.MakeCode,
+                //    raw->data.keyboard.Flags,
+                //    raw->data.keyboard.Reserved,
+                //    raw->data.keyboard.ExtraInformation,
+                //    raw->data.keyboard.Message,
+                //    raw->data.keyboard.VKey);
+            }
+            else if (raw->header.dwType == RIM_TYPEMOUSE)
+            {
+                Input::InputManager::UpdateCursorByLastFrameMoveOffset(float(raw->data.mouse.lLastX), float(raw->data.mouse.lLastY));
+                //hResult = StringCchPrintf(szTempOutput, STRSAFE_MAX_CCH,
+                //    TEXT("Mouse: usFlags=%04x ulButtons=%04x usButtonFlags=%04x usButtonData=%04x ulRawButtons=%04x lLastX=%04x lLastY=%04x ulExtraInformation=%04x\r\n"),
+                //    raw->data.mouse.usFlags,
+                //    raw->data.mouse.ulButtons,
+                //    raw->data.mouse.usButtonFlags,
+                //    raw->data.mouse.usButtonData,
+                //    raw->data.mouse.ulRawButtons,
+                //    raw->data.mouse.lLastX,
+                //    raw->data.mouse.lLastY,
+                //    raw->data.mouse.ulExtraInformation);
+            }
+
+            delete[] lpb;
+            return 0;
+        }
+
+        //The following code processes legacy windows mouse/keyboard input,
+        //which is not needed because it failed to suffice for locking
+        //mouse at the center of the window while also moving the camera
+/*
         case WM_MOUSEMOVE:
         {
 			int xPos = GET_X_LPARAM(lParam);
 			int yPos = GET_Y_LPARAM(lParam);
             Input::InputManager::UpdateMouse(float(xPos), float(yPos));
+            // TODO: 可能还是要使用Raw Input API来完美处理输入
+            //SetCursorPos(back.x, back.y);
+
             return 0;
         }
         case WM_LBUTTONDOWN:
@@ -162,21 +236,39 @@ LRESULT Win32Window::WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
             // But it may come in handy later if there's some typings.
 			return 0;
         }
+*/
 		case WM_SIZE:
 		{
-			// UINT width = LOWORD(lParam);
-			// UINT height = HIWORD(lParam);
-			// 给Renderer发送重新创建SwapChain的信息
-			return 0;
+            // TODO: Seperate path for window init and window resize
+            UINT width = LOWORD(lParam);
+            UINT height = HIWORD(lParam);
+            Input::InputManager::SetNewWindowSize(width, height);
+            // TODO: 可能还是要使用Raw Input API来完美处理输入
+            // SetCursorPos(back.x, back.y);
+
+            ShowCursor(false);
+
+            RECT winRect;
+            GetWindowRect(hwnd, &winRect);
+            ClipCursor(&winRect);
+            SetCapture(hwnd);
+
+            // TODO: 给Renderer发送重新创建SwapChain的信息
+            return 0;
 		}
 		case WM_CLOSE:
 		{
 			Win32Window* pThis = (Win32Window*)GetWindowLongPtr(hwnd, GWLP_USERDATA);
-			pThis->bContinue = false;
+            ShowCursor(true);
+            pThis->bContinue = false;
 			return 0;
 		}
 		case WM_DESTROY:
 		{
+            ShowCursor(true);
+            ClipCursor(NULL);
+            ReleaseCapture();
+
 			PostQuitMessage(0);
 			return 0;
 		}
