@@ -48,7 +48,8 @@ public:
 		}
 	}
 
-	static void UpdateBindingWindows(uint32_t, bool);
+	static void UpdateBindingWindowsRaw(uint32_t, bool);
+	static void UpdateBindingWindowsLegacy(uint32_t, bool); //Not used
 	//static void UpdateBindingLinux(uint32_t, bool);
 	//static void UpdateBindingMacro(uint32_t, bool);
 
@@ -56,7 +57,7 @@ public:
 	static void UpdateCursorByLastFrameMoveOffset(float offsetX, float offsetY)
 	{
 		//For Windows, the upper left postion of current window is the origin (0,0)
-		mouseOffset = float2(offsetX, offsetY);
+		mouseOffset = float2(-offsetX, -offsetY);
 	}
 
 	static void UpdateMouse(float newX, float newY)

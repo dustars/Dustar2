@@ -49,7 +49,7 @@ void Camera::UpdateCamera(double msec)
 	if (Input::InputManager::GetKeyPressed(Input::Bindings::SPACE)) {
 		position.y -= msec * FACTOR;
 	}
-	if (Input::InputManager::GetKeyPressed(Input::Bindings::SHIFT)) {
+	if (Input::InputManager::GetKeyPressed(Input::Bindings::L_SHIFT)) {
 		position.y += msec * FACTOR;
 	}
 

@@ -123,49 +123,45 @@ LRESULT Win32Window::WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 			
             return 0;
 		}
+        //TODO:把鼠标按键和滚轮设置了
         case WM_INPUT:
         {
-            UINT dwSize;
+            UINT dwSize = sizeof(RAWINPUT);
+            static BYTE lpb[sizeof(RAWINPUT)];
 
-            GetRawInputData((HRAWINPUT)lParam, RID_INPUT, NULL, &dwSize, sizeof(RAWINPUTHEADER));
-            LPBYTE lpb = new BYTE[dwSize];
-            if (lpb == NULL)
-            {
-                return 0;
-            }
-
-            if (GetRawInputData((HRAWINPUT)lParam, RID_INPUT, lpb, &dwSize, sizeof(RAWINPUTHEADER)) != dwSize)
-                OutputDebugString(TEXT("GetRawInputData does not return correct size !\n"));
+            GetRawInputData((HRAWINPUT)lParam, RID_INPUT, lpb, &dwSize, sizeof(RAWINPUTHEADER));
 
             RAWINPUT* raw = (RAWINPUT*)lpb;
 
             if (raw->header.dwType == RIM_TYPEKEYBOARD)
             {
-                //hResult = StringCchPrintf(szTempOutput, STRSAFE_MAX_CCH,
-                //    TEXT(" Kbd: make=%04x Flags:%04x Reserved:%04x ExtraInformation:%08x, msg=%04x VK=%04x \n"),
-                //    raw->data.keyboard.MakeCode,
-                //    raw->data.keyboard.Flags,
-                //    raw->data.keyboard.Reserved,
-                //    raw->data.keyboard.ExtraInformation,
-                //    raw->data.keyboard.Message,
-                //    raw->data.keyboard.VKey);
+                switch (raw->data.keyboard.Flags)
+                {
+                    case RI_KEY_MAKE:   // Key is pressed
+                    {
+                        Input::InputManager::UpdateBindingWindowsRaw(uint32_t(raw->data.keyboard.MakeCode), true);
+                        break;
+                    }
+                    case RI_KEY_BREAK:  // Key is released
+                    {
+                        Input::InputManager::UpdateBindingWindowsRaw(uint32_t(raw->data.keyboard.MakeCode), false);
+                        break;
+                    }
+                    default:
+                    {
+                        //还有啥 RI_KEY_E0/RI_KEY_E1/RI_KEY_MAKE
+                        //TODO:目前没用途, 无视, 后续考虑给个信息之类的
+                        break;
+                    }
+                }
             }
             else if (raw->header.dwType == RIM_TYPEMOUSE)
             {
-                Input::InputManager::UpdateCursorByLastFrameMoveOffset(float(raw->data.mouse.lLastX), float(raw->data.mouse.lLastY));
-                //hResult = StringCchPrintf(szTempOutput, STRSAFE_MAX_CCH,
-                //    TEXT("Mouse: usFlags=%04x ulButtons=%04x usButtonFlags=%04x usButtonData=%04x ulRawButtons=%04x lLastX=%04x lLastY=%04x ulExtraInformation=%04x\r\n"),
-                //    raw->data.mouse.usFlags,
-                //    raw->data.mouse.ulButtons,
-                //    raw->data.mouse.usButtonFlags,
-                //    raw->data.mouse.usButtonData,
-                //    raw->data.mouse.ulRawButtons,
-                //    raw->data.mouse.lLastX,
-                //    raw->data.mouse.lLastY,
-                //    raw->data.mouse.ulExtraInformation);
+                int relativeX = raw->data.mouse.lLastX;
+                int relativeY = raw->data.mouse.lLastY;
+                Input::InputManager::UpdateCursorByLastFrameMoveOffset(relativeX, relativeY);
             }
 
-            delete[] lpb;
             return 0;
         }
 

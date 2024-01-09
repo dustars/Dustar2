@@ -1,3 +1,9 @@
+/*
+	Module Description:
+	TODO: 目前只写了一部分的按键, 一些诸如PageUp PageDown Tab之类的
+	其他外设如手柄，都没有做Binding
+*/
+
 export module Input:Bindings;
 
 import <stdint.h>;
@@ -18,10 +24,14 @@ export enum class Bindings : uint8_t
 	//----------------Keyboard----------------
 	// functional
 	SPACE,					// SPACE key
-	SHIFT,					// SHIFT key
-	CONTROL,				// CTRL key
-	ALT,					// ALT key
 	ESCAPE,					// ESC key
+	ENTER,					// enter/return key
+	L_SHIFT,				// left SHIFT key
+	L_CONTROL,				// left CTRL key
+	L_ALT,					// left ALT key
+	R_SHIFT,				// right SHIFT key
+	R_CONTROL,				// right CTRL key
+	R_ALT,					// right ALT key
 
 	// numbers
 	ZERO,					// 0 key
