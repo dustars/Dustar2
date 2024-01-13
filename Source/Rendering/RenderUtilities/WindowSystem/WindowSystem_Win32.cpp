@@ -57,23 +57,7 @@ Win32Window::Win32Window(uint32_t width, uint32_t height)
     if(!windowHandle) throw std::runtime_error("Cannot Create Window");
     windowInstance = this;
 
-    //Input
-    RAWINPUTDEVICE Rid[2];
-
-    Rid[0].usUsagePage = 0x01;          // HID_USAGE_PAGE_GENERIC
-    Rid[0].usUsage = 0x02;              // HID_USAGE_GENERIC_MOUSE
-    Rid[0].dwFlags = RIDEV_NOLEGACY;    // adds mouse and also ignores legacy mouse messages
-    Rid[0].hwndTarget = 0;
-
-    Rid[1].usUsagePage = 0x01;          // HID_USAGE_PAGE_GENERIC
-    Rid[1].usUsage = 0x06;              // HID_USAGE_GENERIC_KEYBOARD
-    Rid[1].dwFlags = RIDEV_NOLEGACY;    // adds keyboard and also ignores legacy keyboard messages
-    Rid[1].hwndTarget = 0;
-
-    if (RegisterRawInputDevices(Rid, 2, sizeof(Rid[0])) == FALSE)
-    {
-        //registration failed. Call GetLastError for the cause of the error
-    }
+    SetUpInputDevices();
 }
 
 //TODO:真的应该在这个地方吗?
@@ -93,6 +77,27 @@ void Win32Window::InitWindowSurface(VkInstance vkInstance, VkSurfaceKHR& surface
 
 }
 
+void Win32Window::SetUpInputDevices()
+{
+    //Input
+    RAWINPUTDEVICE Rid[2];
+
+    Rid[0].usUsagePage = 0x01;          // HID_USAGE_PAGE_GENERIC
+    Rid[0].usUsage = 0x02;              // HID_USAGE_GENERIC_MOUSE
+    Rid[0].dwFlags = RIDEV_NOLEGACY;    // adds mouse and also ignores legacy mouse messages
+    Rid[0].hwndTarget = 0;
+
+    Rid[1].usUsagePage = 0x01;          // HID_USAGE_PAGE_GENERIC
+    Rid[1].usUsage = 0x06;              // HID_USAGE_GENERIC_KEYBOARD
+    Rid[1].dwFlags = RIDEV_NOLEGACY;    // adds keyboard and also ignores legacy keyboard messages
+    Rid[1].hwndTarget = 0;
+
+    if (RegisterRawInputDevices(Rid, 2, sizeof(Rid[0])) == FALSE)
+    {
+        //registration failed. Call GetLastError for the cause of the error
+    }
+}
+
 bool Win32Window::Update(float ms) const
 {
 	std::wstringstream wss;
@@ -100,10 +105,19 @@ bool Win32Window::Update(float ms) const
     SetWindowText(windowHandle, wss.str().c_str());
 
     MSG msg{};
-    if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
+
+    while (BOOL res = PeekMessage(&msg, NULL, 0, 0, PM_REMOVE) != 0)
+    //while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
     {
-        TranslateMessage(&msg);
-        DispatchMessage(&msg);
+        if (res == -1)
+        {
+            //Deal with errors or exit
+        }
+        else
+        {
+            TranslateMessage(&msg);
+            DispatchMessage(&msg);
+        }
     }
 
     return bContinue;
@@ -120,14 +134,15 @@ LRESULT Win32Window::WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 			CREATESTRUCT* pCreate = (CREATESTRUCT*)lParam;
 			Win32Window* pThis = (Win32Window*)pCreate->lpCreateParams;
             SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR)pThis);
-			
+
             return 0;
 		}
         //TODO:把鼠标按键和滚轮设置了
         case WM_INPUT:
         {
-            UINT dwSize = sizeof(RAWINPUT);
-            static BYTE lpb[sizeof(RAWINPUT)];
+            UINT dwSize;
+            GetRawInputData((HRAWINPUT)lParam, RID_INPUT, NULL, &dwSize, sizeof(RAWINPUTHEADER));
+            LPBYTE lpb = new BYTE[dwSize];
 
             GetRawInputData((HRAWINPUT)lParam, RID_INPUT, lpb, &dwSize, sizeof(RAWINPUTHEADER));
 
@@ -162,6 +177,7 @@ LRESULT Win32Window::WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
                 Input::InputManager::UpdateCursorByLastFrameMoveOffset(relativeX, relativeY);
             }
 
+            delete[] lpb;
             return 0;
         }
 

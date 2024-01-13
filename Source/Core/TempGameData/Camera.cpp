@@ -7,7 +7,8 @@
 */
 
 module;
-#define FACTOR 0.01f
+#define MOUSE_SENSITIVITY 0.03f
+#define MOVEMENT_FACTOR 0.01f
 #include <math.h>;
 module Camera;
 
@@ -29,28 +30,28 @@ void Camera::BuildRenderCameraData()
 
 void Camera::UpdateCamera(double msec)
 {
-	yaw += 0.5 * FACTOR * Input::InputManager::GetMouseXOffset();
-	pitch -= 0.5 * FACTOR * Input::InputManager::GetMouseYOffset();
+	yaw += MOUSE_SENSITIVITY * Input::InputManager::GetMouseXOffset();
+	pitch -= MOUSE_SENSITIVITY * Input::InputManager::GetMouseYOffset();
 
 	if (Input::InputManager::GetKeyPressed(Input::Bindings::W)) {
-		position += (Matrix4::Rotation(yaw, Vector3(0, 1, 0)) * Vector3(0, 0, -1) * msec) * FACTOR;
+		position += (Matrix4::Rotation(yaw, Vector3(0, 1, 0)) * Vector3(0, 0, -1) * msec) * MOVEMENT_FACTOR;
 	}
 	if (Input::InputManager::GetKeyPressed(Input::Bindings::S)) {
-		position -= (Matrix4::Rotation(yaw, Vector3(0, 1, 0)) * Vector3(0, 0, -1) * msec) * FACTOR;
+		position -= (Matrix4::Rotation(yaw, Vector3(0, 1, 0)) * Vector3(0, 0, -1) * msec) * MOVEMENT_FACTOR;
 	}
 
 	if (Input::InputManager::GetKeyPressed(Input::Bindings::A)) {
-		position += (Matrix4::Rotation(yaw, Vector3(0, 1, 0)) * Vector3(-1, 0, 0) * msec) * FACTOR;
+		position += (Matrix4::Rotation(yaw, Vector3(0, 1, 0)) * Vector3(-1, 0, 0) * msec) * MOVEMENT_FACTOR;
 	}
 	if (Input::InputManager::GetKeyPressed(Input::Bindings::D)) {
-		position -= (Matrix4::Rotation(yaw, Vector3(0, 1, 0)) * Vector3(-1, 0, 0) * msec) * FACTOR;
+		position -= (Matrix4::Rotation(yaw, Vector3(0, 1, 0)) * Vector3(-1, 0, 0) * msec) * MOVEMENT_FACTOR;
 	}
 
 	if (Input::InputManager::GetKeyPressed(Input::Bindings::SPACE)) {
-		position.y -= msec * FACTOR;
+		position.y -= msec * MOVEMENT_FACTOR;
 	}
 	if (Input::InputManager::GetKeyPressed(Input::Bindings::L_SHIFT)) {
-		position.y += msec * FACTOR;
+		position.y += msec * MOVEMENT_FACTOR;
 	}
 
 	// TODO: Should I put it into another method?
