@@ -67,11 +67,14 @@ void MiddleRenderer::Init()
 		throw std::runtime_error("MiddleRenderer: Camera is not set up!");
 	}
 
-	constexpr float	PI_OVER_360 = 3.14159265358979323846f / 360.0f;
+	CreateTestPass();
+}
 
-	RenderResourceManager resourceManager(RBI);
-
-	// 资源创建
+void MiddleRenderer::CreateTestPass()
+{
+	// -----------------------------------------
+	// ---------- Start Data preperation
+	// -----------------------------------------
 	// TODO local variable cannot reach the point where Vulkan use it to initialize buffer/image
 	// TODO 我显卡居然是256字节对齐？？？？？？
 	static std::vector<mat4> matrices;
@@ -89,6 +92,10 @@ void MiddleRenderer::Init()
 	m.CreateCube();
 	//m.CreateTriangle();
 
+	// -----------------------------------------
+	// ---------- Binding Rendering resources
+	// -----------------------------------------
+	RenderResourceManager resourceManager(RBI);
 	ResourceLayout* layout = resourceManager.CreateResourceLayout();
 	layout->CreateMeshData(m);
 	layout->CreatePushContant("mvp", sizeof(mat4), camera->viewMatrix.values);
@@ -103,7 +110,15 @@ void MiddleRenderer::Init()
 	ShaderFile vert("../Rendering/Shaders/SimpleVertexShader.spv", "main", ShaderType::VS);
 	ShaderFile frag("../Rendering/Shaders/SimpleFragmentShader.spv", "main", ShaderType::FS);
 
-	Pipeline& testPipeline = RBI->CreateGraphicsPipeline( layout, ShaderArray{ vert, frag } );
+	// -----------------------------------------
+	// ---------- Create Pipeline
+	// -----------------------------------------
+
+	Pipeline& testPipeline = RBI->CreateGraphicsPipeline(layout, ShaderArray{ vert, frag });
+
+	// -----------------------------------------
+	// ---------- Adding pass, we're ready to go
+	// -----------------------------------------
 
 	RBI->AddPass([&testPipeline](CmdBuffer* cmd)
 		{
@@ -121,3 +136,4 @@ bool MiddleRenderer::Render()
 {
     return RBI->Render();
 }
+

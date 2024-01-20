@@ -8,11 +8,13 @@
 
 module VkGraphicsPipeline;
 
+import VulkanConfig;
 import <stdint.h>;
 import <vulkan\vulkan.h>;
 
 namespace RB
 {
+	//TODO: 换个地方,如果以后真不用renderpass了,全部删掉也行
 
 VkGraphicsPipeline::VkGraphicsPipeline() {}
 
@@ -22,8 +24,11 @@ VkGraphicsPipeline::VkGraphicsPipeline(VkPhysicalDevice* pDev, VkDevice* dev, Vk
 	, surface(sur)
 	, resourceLayout(const_cast<VkResourceLayout*>(layout))
 {
+if constexpr (useRenderPass)
+{
 	CreateRenderPass();
 	CreateFramebuffer();
+}
 	// 这个要放外面可能
 	CreateShaderModule(shaders);
 	// Create Shaders, Vertex & Fragment Shaders must exist. Others are optional.
@@ -32,11 +37,14 @@ VkGraphicsPipeline::VkGraphicsPipeline(VkPhysicalDevice* pDev, VkDevice* dev, Vk
 
 VkGraphicsPipeline::~VkGraphicsPipeline()
 {
+if constexpr (useRenderPass)
+{
 	vkDestroyRenderPass(*devicePtr, renderPass, nullptr);
 	for (uint32_t i = 0; i < framebuffers.size(); i++)
 	{
 		vkDestroyFramebuffer(*devicePtr, framebuffers[i], nullptr);
 	}
+}
 	vkDestroyPipeline(*devicePtr, graphicsPipeline, nullptr);
 	// 暂时由每个Pipeline负责删掉自己会用到的各种资源
 	delete resourceLayout; 
@@ -210,7 +218,7 @@ void VkGraphicsPipeline::CreateGraphicsPipeline()
 		sizeof(float) * 4
 	);
 
-	VkPipelineVertexInputStateCreateInfo vertexCreateInfo;
+	VkPipelineVertexInputStateCreateInfo vertexCreateInfo{};
 	vertexCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 	vertexCreateInfo.pNext = nullptr;
 	vertexCreateInfo.flags = 0;
@@ -219,7 +227,7 @@ void VkGraphicsPipeline::CreateGraphicsPipeline()
 	vertexCreateInfo.vertexAttributeDescriptionCount = attributes.size();
 	vertexCreateInfo.pVertexAttributeDescriptions = attributes.data();
 
-	VkPipelineInputAssemblyStateCreateInfo InputCreateInfo;
+	VkPipelineInputAssemblyStateCreateInfo InputCreateInfo{};
 	InputCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
 	InputCreateInfo.pNext = nullptr;
 	InputCreateInfo.flags = 0;
@@ -228,7 +236,7 @@ void VkGraphicsPipeline::CreateGraphicsPipeline()
 
 	VkViewport viewport = { 0.f, 0.f, surface->GetExtent().width, surface->GetExtent().height, 0.f, 1.f };
 	VkRect2D scissor = { {0,0} , surface->GetExtent() };
-	VkPipelineViewportStateCreateInfo viewportCreateInfo;
+	VkPipelineViewportStateCreateInfo viewportCreateInfo{};
 	viewportCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
 	viewportCreateInfo.pNext = nullptr;
 	viewportCreateInfo.flags = 0;
@@ -237,7 +245,7 @@ void VkGraphicsPipeline::CreateGraphicsPipeline()
 	viewportCreateInfo.scissorCount = 1;
 	viewportCreateInfo.pScissors = &scissor;
 
-	VkPipelineRasterizationStateCreateInfo rasterizationCreateInfo;
+	VkPipelineRasterizationStateCreateInfo rasterizationCreateInfo{};
 	rasterizationCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
 	rasterizationCreateInfo.pNext = nullptr;
 	rasterizationCreateInfo.flags = 0;
@@ -252,7 +260,7 @@ void VkGraphicsPipeline::CreateGraphicsPipeline()
 	rasterizationCreateInfo.depthBiasSlopeFactor = 0; // Optional
 	rasterizationCreateInfo.lineWidth = 1.0f;
 
-	VkPipelineMultisampleStateCreateInfo multisamplingCreateInfo{}; //我人傻了，为什么这个地方必须要加{}? 不然Pipeline创建老是失败？？
+	VkPipelineMultisampleStateCreateInfo multisamplingCreateInfo{};
 	multisamplingCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
 	multisamplingCreateInfo.sampleShadingEnable = VK_FALSE;
 	multisamplingCreateInfo.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
@@ -261,7 +269,7 @@ void VkGraphicsPipeline::CreateGraphicsPipeline()
 	multisamplingCreateInfo.alphaToCoverageEnable = VK_FALSE; // Optional
 	multisamplingCreateInfo.alphaToOneEnable = VK_FALSE; // Optional
 
-	VkPipelineColorBlendAttachmentState attachmentState;
+	VkPipelineColorBlendAttachmentState attachmentState{};
 	attachmentState.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
 	attachmentState.blendEnable = VK_FALSE;
 	attachmentState.srcColorBlendFactor = VK_BLEND_FACTOR_ONE; // Optional
@@ -271,7 +279,7 @@ void VkGraphicsPipeline::CreateGraphicsPipeline()
 	attachmentState.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO; // Optional
 	attachmentState.alphaBlendOp = VK_BLEND_OP_ADD; // Optional
 
-	VkPipelineColorBlendStateCreateInfo blendCreateInfo{}; //我人傻了，为什么这个地方必须要加{}? 不然Pipeline创建老是失败？？
+	VkPipelineColorBlendStateCreateInfo blendCreateInfo{};
 	blendCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
 	blendCreateInfo.logicOpEnable = VK_FALSE;
 	blendCreateInfo.logicOp = VK_LOGIC_OP_COPY; // Optional
@@ -282,7 +290,7 @@ void VkGraphicsPipeline::CreateGraphicsPipeline()
 	blendCreateInfo.blendConstants[2] = 0.0f; // Optional
 	blendCreateInfo.blendConstants[3] = 0.0f; // Optional
 
-	VkGraphicsPipelineCreateInfo pipelineCreateInfo;
+	VkGraphicsPipelineCreateInfo pipelineCreateInfo{};
 	pipelineCreateInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
 	pipelineCreateInfo.pNext = nullptr;
 	pipelineCreateInfo.flags = VK_PIPELINE_CREATE_DISABLE_OPTIMIZATION_BIT;
@@ -298,10 +306,37 @@ void VkGraphicsPipeline::CreateGraphicsPipeline()
 	pipelineCreateInfo.pColorBlendState = &blendCreateInfo;
 	pipelineCreateInfo.pDynamicState = nullptr;
 	pipelineCreateInfo.layout = resourceLayout->BuildPipelineLayout();
-	pipelineCreateInfo.renderPass = renderPass;
-	pipelineCreateInfo.subpass = 0;
 	pipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE;
 	pipelineCreateInfo.basePipelineIndex = -1;
+
+	//Vulkan 1.3 Dynamic Rendering Test Case
+	//TODO: Make it elegant
+if constexpr (useRenderPass)
+{
+	pipelineCreateInfo.renderPass = renderPass;
+	pipelineCreateInfo.subpass = 0;
+}
+else
+{
+	VkFormat colorFormat = { VK_FORMAT_R8G8B8A8_UNORM };
+	VkPipelineRenderingCreateInfo renderingCreateInfo{};
+	renderingCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO;
+	renderingCreateInfo.pNext = nullptr;
+	renderingCreateInfo.colorAttachmentCount = 1;
+	renderingCreateInfo.pColorAttachmentFormats = &colorFormat;
+	renderingCreateInfo.depthAttachmentFormat = VK_FORMAT_UNDEFINED;
+	renderingCreateInfo.stencilAttachmentFormat = VK_FORMAT_UNDEFINED;
+
+	//TODO: 窗口resize和这个scissor可能需要动态改变
+	//VkDynamicState state[] = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
+
+	//VkPipelineDynamicStateCreateInfo dynamicInfo = { .sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO };
+	//dynamicInfo.pDynamicStates = &state[0];
+	//dynamicInfo.dynamicStateCount = 2;
+
+	pipelineCreateInfo.pNext = &renderingCreateInfo;
+	//pipelineCreateInfo.pDynamicState = &dynamicInfo; 
+}
 
 	if (VK_SUCCESS != vkCreateGraphicsPipelines(*devicePtr, VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr, &graphicsPipeline))
 	{

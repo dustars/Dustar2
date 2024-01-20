@@ -59,7 +59,7 @@ export class RBInterface
     friend class RenderResourceManager;
 
     typedef std::function<void(CmdBuffer* cmd)> CmdOps;
-    typedef std::vector<std::function<void(CmdBuffer* cmd)>> CmdOpsArray;
+    typedef std::vector<CmdOps> CmdOpsArray;
 public:
     virtual ~RBInterface() {}
 

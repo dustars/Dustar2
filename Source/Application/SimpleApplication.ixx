@@ -62,7 +62,6 @@ public:
             // Post Loop functions 执行本帧(game?)的善后工作
             Input::InputManager::ResetMouse();
 
-
             // 渲染
             if (Timer::Tick()) renderer.Render();
         }

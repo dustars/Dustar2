@@ -9,20 +9,9 @@
 module;
 #define WINDOW_APP
 #define VK_USE_PLATFORM_WIN32_KHR
-
-#define VK_API_VERSION_MAJOR(version) (((uint32_t)(version) >> 22U) & 0x7FU)
-#define VK_API_VERSION_MINOR(version) (((uint32_t)(version) >> 12U) & 0x3FFU)
-#define VK_API_VERSION_PATCH(version) ((uint32_t)(version) & 0xFFFU)
-
-#define VK_MAKE_API_VERSION(variant, major, minor, patch) \
-    ((((uint32_t)(variant)) << 29U) | (((uint32_t)(major)) << 22U) | (((uint32_t)(minor)) << 12U) | ((uint32_t)(patch)))
-
-#define VK_API_VERSION_1_1 VK_MAKE_API_VERSION(0, 1, 1, 0)
-#define VK_API_VERSION_1_2 VK_MAKE_API_VERSION(0, 1, 2, 0)
-#define VK_API_VERSION_1_3 VK_MAKE_API_VERSION(0, 1, 3, 0)
-
 module VkRenderingBackend;
 
+import VulkanConfig;
 import Input;
 import <vulkan\vulkan.h>;
 
@@ -43,6 +32,7 @@ VkRBInterface::VkRBInterface()
 
 VkRBInterface::~VkRBInterface()
 {
+	// It's a good way to destroy vulkan objects in reverse order they were created
 	// 必须提前删掉pipelines 各种依赖关系你懂的
 	testGraphicsPipeline.clear();
 	// 必须在删除device和instance之前delete cmd 和 surface 各种依赖关系你懂的
@@ -71,11 +61,20 @@ bool VkRBInterface::Render()
 		uint32_t imageIndex = surface.GetAvailableImageIndex(UINT64_MAX, imageAvailableSemaphore);
 
 		cmd.BeginCommandBuffer();
+if constexpr (useRenderPass)
+{
 		cmd.BeginRenderPass(testGraphicsPipeline[i], imageIndex);
-
 		renderingOps[i](&cmd);
-
 		cmd.EndRenderPass();
+}
+else
+{
+		cmd.ImageTransition(testGraphicsPipeline[i].GetSurfaceRef().GetImage(imageIndex), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+		cmd.BeginDynamicRendering(testGraphicsPipeline[i], imageIndex);
+		renderingOps[i](&cmd);	
+		cmd.EndDynamicRendering();
+		cmd.ImageTransition(testGraphicsPipeline[i].GetSurfaceRef().GetImage(imageIndex), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+}
 		cmd.EndCommandBuffer();
 		cmd.SubmitCommandBuffer(vkQueues[0], imageAvailableSemaphore, renderFinishedSemaphore);
 
@@ -208,13 +207,26 @@ void VkRBInterface::InitVulkanLogicalDevice()
 	std::vector<const char*> enabledDeviceLayers;
 	EnableDeviceLayers(enabledDeviceLayers);
 
-	std::vector<const char*> enabledDeviceExtensions;
-	EnableDeviceExtensions(enabledDeviceExtensions);
+	if (!extensions.CheckConfigedExtensionsAvailability(vkPhysicalDevice))
+	{
+		throw std::runtime_error("Configed Extension is not available on device!");
+	}
 
 	if (!FindSubitableQueueFamily())
 	{
 		throw std::runtime_error("Cannot find suitable queue!");
 	}
+
+	// TODO: 这些东西感觉不能在这里写死,需要和Extension本身绑定...真TM麻烦
+	VkPhysicalDeviceDynamicRenderingFeatures dynamicRenderingFeature{};
+	dynamicRenderingFeature.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES;
+	dynamicRenderingFeature.dynamicRendering = VK_TRUE;
+
+	VkPhysicalDeviceSynchronization2Features synchronization2Feature{
+		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES,
+		&dynamicRenderingFeature,
+		VK_TRUE
+	};
 
 	std::vector<VkDeviceQueueCreateInfo> queueCreateInfo;
 	float priorities[1] = { 0 };
@@ -229,7 +241,7 @@ void VkRBInterface::InitVulkanLogicalDevice()
 
 	VkDeviceCreateInfo createInfo;
 	createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-	createInfo.pNext = nullptr;
+	createInfo.pNext = &synchronization2Feature;
 	createInfo.flags = 0;
 	// TODO: Queue的动态选择和创建
 	createInfo.pQueueCreateInfos = queueCreateInfo.data();
@@ -237,8 +249,8 @@ void VkRBInterface::InitVulkanLogicalDevice()
 	// TODO: layer和extension的动态加载
 	createInfo.enabledLayerCount = static_cast<uint32_t>(enabledDeviceLayers.size());
 	createInfo.ppEnabledLayerNames = enabledDeviceLayers.data();
-	createInfo.enabledExtensionCount = static_cast<uint32_t>(enabledDeviceExtensions.size());
-	createInfo.ppEnabledExtensionNames = enabledDeviceExtensions.data();
+	createInfo.enabledExtensionCount = extensions.GetConfigedExtensionSize();
+	createInfo.ppEnabledExtensionNames = extensions.GetConfigedExtensionData();
 	// TODO: 可以把Physical Device创建的feature直接拿来用,！但会增加性能开销！
 	// 一个更加自然的实现就是用到什么就enable什么feature,但这个就比较复杂了……
 	createInfo.pEnabledFeatures = nullptr;
@@ -332,23 +344,6 @@ void VkRBInterface::EnableDeviceLayers(std::vector<const char*>& enabledDeviceLa
 	{
 		layers.resize(layerCount);
 		vkEnumerateDeviceLayerProperties(vkPhysicalDevice, &layerCount, layers.data());
-	}
-}
-
-void VkRBInterface::EnableDeviceExtensions(std::vector<const char*>& enabledDeviceExtensions)
-{
-#ifdef WINDOW_APP
-	enabledDeviceExtensions.push_back("VK_KHR_swapchain");
-#endif
-
-	uint32_t extensionCount;
-	std::vector<VkExtensionProperties> extensions;
-
-	vkEnumerateDeviceExtensionProperties(vkPhysicalDevice, nullptr, &extensionCount, nullptr);
-	if (extensionCount != 0)
-	{
-		extensions.resize(extensionCount);
-		vkEnumerateDeviceExtensionProperties(vkPhysicalDevice, nullptr, &extensionCount, extensions.data());
 	}
 }
 

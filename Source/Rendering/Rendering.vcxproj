@@ -173,6 +173,14 @@
       <SubType>
       </SubType>
     </ClCompile>
+    <ClCompile Include="RenderBackend\Vulkan\VulkanConfigs\VkExtensions.ixx">
+      <SubType>
+      </SubType>
+    </ClCompile>
+    <ClCompile Include="RenderBackend\Vulkan\VulkanConfigs\VulkanConfig.ixx">
+      <SubType>
+      </SubType>
+    </ClCompile>
     <ClCompile Include="Renderer\MiddleRenderer.cpp" />
     <ClCompile Include="Renderer\MiddleRenderer.ixx">
       <SubType>

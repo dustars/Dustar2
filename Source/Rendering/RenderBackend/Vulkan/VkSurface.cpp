@@ -69,6 +69,7 @@ void VkSurface::InitSwapChain()
 	swapChainImageFormat = VK_FORMAT_R8G8B8A8_UNORM;
 	swapChainExtent = surfaceCap.currentExtent;
 
+	// Creating a swapchain will also create the images for it
 	// Swap Chain算是相当重型了……如下好多参数都决定了整体的基调,需要多加重视
 	VkSwapchainCreateInfoKHR createInfo;
 	createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;

@@ -16,6 +16,7 @@ import VkGraphicsPipeline;
 import VkComputePipeline;
 import RenderResource;
 import VkRenderResource;
+import VkExtensions;
 import <stdint.h>;
 import <vulkan\vulkan.h>;
 
@@ -40,6 +41,9 @@ export class VkRBInterface : public RBInterface
 	VkSemaphore imageAvailableSemaphore;
 	VkSemaphore renderFinishedSemaphore;
 	VkFence inFlightFence;
+	
+	// Vulkan Config
+	VkExtensions extensions;
 
 	std::vector<VkGraphicsPipeline> testGraphicsPipeline;
 	std::vector<VkGraphicsPipeline> testComputePipelines;

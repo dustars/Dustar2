@@ -52,7 +52,7 @@ public:
 
 	VkPipeline GetPipeline() { return graphicsPipeline; }
 
-	const VkSurface& GetSurfaceRef() const{ return *surface; }
+	VkSurface& GetSurfaceRef() const{ return *surface; }
 	const VkFramebuffer& GetFrameBuffer(uint32_t i) const { return framebuffers[i]; }
 	const VkRenderPass& GetRenderPass() const { return renderPass; }
 

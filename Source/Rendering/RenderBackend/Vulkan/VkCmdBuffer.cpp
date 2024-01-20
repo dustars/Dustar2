@@ -6,9 +6,9 @@
     5/14/2022 6:37:09 PM
 */
 
+module;
+#include <vulkan\vulkan.h>
 module VkCmdBuffer;
-
-import <vulkan\vulkan.h>;
 
 namespace RB
 {
@@ -88,6 +88,69 @@ void VkCmdBuffer::BeginRenderPass(const VkGraphicsPipeline& pipeline, uint32_t i
 void VkCmdBuffer::EndRenderPass()
 {
 	vkCmdEndRenderPass(cmd);
+}
+
+void VkCmdBuffer::BeginDynamicRendering(VkGraphicsPipeline& pipeline, uint32_t imageIndex)
+{
+	VkClearValue clearColor{.color = { 0.2f, 0.2f, 0.3f, 1.f } };
+	VkRenderingAttachmentInfo colorAttach{
+		.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+		.imageView = *pipeline.GetSurfaceRef().GetAvailableImageView(imageIndex),
+		.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+		.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+		.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+		.clearValue = clearColor
+	};
+
+	VkRect2D area = { {0,0}, pipeline.GetSurfaceRef().GetExtent() };
+
+	VkRenderingInfo renderInfo{
+	.sType = VK_STRUCTURE_TYPE_RENDERING_INFO,
+	.renderArea = area,
+	.layerCount = 1,
+	.colorAttachmentCount = 1,
+	.pColorAttachments = &colorAttach };
+	//.pDepthAttachment
+	//.pStencilAttachment
+	vkCmdBeginRendering(cmd, &renderInfo);
+}
+
+void VkCmdBuffer::EndDynamicRendering()
+{
+	vkCmdEndRendering(cmd);
+}
+
+void VkCmdBuffer::ImageTransition(VkImage image, VkImageLayout currentLayout, VkImageLayout newLayout)
+{
+	VkImageMemoryBarrier2 imageBarrier{ .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2 };
+	imageBarrier.pNext = nullptr;
+
+	imageBarrier.srcStageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
+	imageBarrier.srcAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT;
+	imageBarrier.dstStageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
+	imageBarrier.dstAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT | VK_ACCESS_2_MEMORY_READ_BIT;
+
+	imageBarrier.oldLayout = currentLayout;
+	imageBarrier.newLayout = newLayout;
+
+	VkImageSubresourceRange subImage{};
+	subImage.aspectMask = (newLayout == VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL) ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
+	subImage.baseMipLevel = 0;
+	subImage.levelCount = VK_REMAINING_MIP_LEVELS;
+	subImage.baseArrayLayer = 0;
+	subImage.layerCount = VK_REMAINING_ARRAY_LAYERS;
+
+	imageBarrier.subresourceRange = subImage;
+	imageBarrier.image = image;
+
+	VkDependencyInfo depInfo{};
+	depInfo.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
+	depInfo.pNext = nullptr;
+
+	depInfo.imageMemoryBarrierCount = 1;
+	depInfo.pImageMemoryBarriers = &imageBarrier;
+
+	vkCmdPipelineBarrier2(cmd, &depInfo);
 }
 
 void VkCmdBuffer::Draw(Pipeline& pipeline)
