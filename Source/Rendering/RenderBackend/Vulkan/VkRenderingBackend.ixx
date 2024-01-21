@@ -37,13 +37,14 @@ export class VkRBInterface : public RBInterface
 	VkSurface surface;
 	VkCmdBuffer cmd;
 
+	// 临时放置用来record non-render ops的cmd
+	VkCmdBuffer cmdNonRender;
+	VkFence nonRenderFence;
+
 	// Temp Synchronization
 	VkSemaphore imageAvailableSemaphore;
 	VkSemaphore renderFinishedSemaphore;
 	VkFence inFlightFence;
-	
-	// Vulkan Config
-	VkExtensions extensions;
 
 	std::vector<VkGraphicsPipeline> testGraphicsPipeline;
 	std::vector<VkGraphicsPipeline> testComputePipelines;
@@ -81,6 +82,10 @@ private:
 
 	// Run time operations
 	void WindowPresentation(uint32_t imageIndex);
+
+	// Upload cpu render data to gpu
+	// TOOD:目前暂时只用于mesh staging Buffer
+	void UploadRenderDataToGPU(VkResourceLayout&);
 };
 
 } // namespace RB

@@ -15,6 +15,7 @@ import CmdBuffer;
 import Pipeline;
 import VkGraphicsPipeline;
 import VkComputePipeline;
+import VulkanConfig;
 import <vulkan\vulkan.h>;
 
 namespace RB
@@ -36,7 +37,10 @@ public:
 
 	void BeginCommandBuffer();
 	void EndCommandBuffer();
+	// Render
 	void SubmitCommandBuffer(VkQueue, VkSemaphore, VkSemaphore);
+	// Non-Render
+	void SubmitCommandBuffer(VkQueue, VkFence);
 
 	void BeginRenderPass(const VkGraphicsPipeline&, uint32_t);
 	void EndRenderPass();

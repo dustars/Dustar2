@@ -13,6 +13,7 @@
 export module VkRenderResource;
 
 import RenderResource;
+import VulkanConfig;
 import <vulkan\vulkan.h>;
 
 namespace RB
@@ -27,6 +28,17 @@ export class VulkanBuffer : public Buffer
 export class VulkanImage : public Image
 {
 
+};
+
+export enum BufferUsage
+{
+    UAV,
+    SRV,
+    VERTEX,
+    INDEX,
+    STAGING,
+    BUFFERADDR,
+    MAX
 };
 
 export class VkResourceLayout : public ResourceLayout
@@ -84,7 +96,14 @@ private:
     VkBuffer indexBuffer;
     VkDeviceMemory indexMemory;
     uint32_t vertexCount;
+    uint32_t vertexByteSize;
     uint32_t indexCount;
+    uint32_t indexByteSize;
+
+    VkBuffer stageBuffer;
+    VkDeviceMemory stageMemory;
+
+    VkDeviceAddress vertexBufferAddress;
 public:
     VkResourceLayout(VkDevice device, VkPhysicalDevice pDev) : vkDevice(device) , vkPhysicalDevice(pDev) {}
     virtual ~VkResourceLayout();
@@ -100,8 +119,11 @@ public:
     void*    SetPushConstant(uint32_t, VkShaderStageFlags&, uint32_t&);
 	const VkBuffer* GetVertexBufferPtr() { return &vertexBuffer; }
 	const VkBuffer* GetIndexBufferPtr() { return &indexBuffer; }
+	VkBuffer GetStageBuffer() { return stageBuffer; }
 	uint32_t GetVertexCount() { return vertexCount; }
+	uint32_t GetVertexSize() { return vertexByteSize; }
 	uint32_t GetIndexCount() { return indexCount; }
+	uint32_t GetIndexSize() { return indexByteSize; }
 private:
     // Called when creating Graphics Pipeline
 	VkPipelineLayout BuildPipelineLayout();
@@ -111,6 +133,10 @@ private:
     void BindResourcesAndDescriptors();
 
     // Utilities
+    template<typename vertexType>
+    void CreateVertexBuffer(const std::vector<vertexType>&);
+    template<typename IndexData>
+    void CreateIndexBuffer(const std::vector<IndexData>&);
 
 // Static Members:
 private:
@@ -136,7 +162,8 @@ private:
 
     static std::vector<resEntry> buffers;
     static std::vector<resEntry> Images;
-	void CreateBuffer(const std::string&, uint32_t, void*);
+    VkBuffer CreateBuffer(const std::string&, uint32_t, BufferUsage, void*, bool = false);
+    VkBufferUsageFlags ConvertToVulkanBufferUsage(BufferUsage);
 	void CreateImage(const std::string&);
 
     static void CreateResources(VkDevice, VkPhysicalDevice);

@@ -28,6 +28,7 @@ VkRBInterface::VkRBInterface()
 
 	surface.InitSurface(&vkInstance, &vkPhysicalDevice, &vkDevice, currentQueueFamilyIndex);
 	cmd.InitCommandBuffer(&vkDevice, currentQueueFamilyIndex);
+	cmdNonRender.InitCommandBuffer(&vkDevice, currentQueueFamilyIndex);
 }
 
 VkRBInterface::~VkRBInterface()
@@ -36,11 +37,13 @@ VkRBInterface::~VkRBInterface()
 	// 必须提前删掉pipelines 各种依赖关系你懂的
 	testGraphicsPipeline.clear();
 	// 必须在删除device和instance之前delete cmd 和 surface 各种依赖关系你懂的
+	cmdNonRender.DestroyCommandBuffer();
 	cmd.DestroyCommandBuffer();
 	surface.DestroySurface();
 	vkDestroySemaphore(vkDevice, imageAvailableSemaphore, nullptr);
 	vkDestroySemaphore(vkDevice, renderFinishedSemaphore, nullptr);
 	vkDestroyFence(vkDevice, inFlightFence, nullptr);
+	vkDestroyFence(vkDevice, nonRenderFence, nullptr);
 	vkDestroyDevice(vkDevice, nullptr);
 	vkDestroyInstance(vkInstance, nullptr);
 }
@@ -113,6 +116,8 @@ void VkRBInterface::InitResources(const std::vector<ResourceLayout*>& layouts)
 	{
 		dynamic_cast<VkResourceLayout*>(layout)->AllocateDescriptorSet();
 		dynamic_cast<VkResourceLayout*>(layout)->BindResourcesAndDescriptors();
+		//TODO:我是不知道为什么放这里...暂时吧
+		UploadRenderDataToGPU(*dynamic_cast<VkResourceLayout*>(layout));
 	}
 }
 
@@ -187,16 +192,16 @@ void VkRBInterface::InitVulkanPhysicalDevices()
 	//    based on these info.
 
 	// Get physical device properties.
-	VkPhysicalDeviceProperties properties;
-	vkGetPhysicalDeviceProperties(vkPhysicalDevice, &properties);
+	VkPhysicalDeviceProperties2 properties{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2 };
+	vkGetPhysicalDeviceProperties2(vkPhysicalDevice, &properties);
 
 	// Get physical device features.
-	VkPhysicalDeviceFeatures features;
-	vkGetPhysicalDeviceFeatures(vkPhysicalDevice, &features);
+	VkPhysicalDeviceFeatures2 features{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2 };
+	vkGetPhysicalDeviceFeatures2(vkPhysicalDevice, &features);
 
 	// Get physical device memory properties.
-	VkPhysicalDeviceMemoryProperties memoryProperties;
-	vkGetPhysicalDeviceMemoryProperties(vkPhysicalDevice, &memoryProperties);
+	VkPhysicalDeviceMemoryProperties2 memoryProperties{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_PROPERTIES_2 };
+	vkGetPhysicalDeviceMemoryProperties2(vkPhysicalDevice, &memoryProperties);
 }
 
 void VkRBInterface::InitVulkanLogicalDevice()
@@ -207,6 +212,8 @@ void VkRBInterface::InitVulkanLogicalDevice()
 	std::vector<const char*> enabledDeviceLayers;
 	EnableDeviceLayers(enabledDeviceLayers);
 
+	// Extension
+	VkExtensions extensions;
 	if (!extensions.CheckConfigedExtensionsAvailability(vkPhysicalDevice))
 	{
 		throw std::runtime_error("Configed Extension is not available on device!");
@@ -216,17 +223,6 @@ void VkRBInterface::InitVulkanLogicalDevice()
 	{
 		throw std::runtime_error("Cannot find suitable queue!");
 	}
-
-	// TODO: 这些东西感觉不能在这里写死,需要和Extension本身绑定...真TM麻烦
-	VkPhysicalDeviceDynamicRenderingFeatures dynamicRenderingFeature{};
-	dynamicRenderingFeature.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES;
-	dynamicRenderingFeature.dynamicRendering = VK_TRUE;
-
-	VkPhysicalDeviceSynchronization2Features synchronization2Feature{
-		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES,
-		&dynamicRenderingFeature,
-		VK_TRUE
-	};
 
 	std::vector<VkDeviceQueueCreateInfo> queueCreateInfo;
 	float priorities[1] = { 0 };
@@ -241,7 +237,7 @@ void VkRBInterface::InitVulkanLogicalDevice()
 
 	VkDeviceCreateInfo createInfo;
 	createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-	createInfo.pNext = &synchronization2Feature;
+	createInfo.pNext = extensions.GetEnabledFeaturesList();
 	createInfo.flags = 0;
 	// TODO: Queue的动态选择和创建
 	createInfo.pQueueCreateInfos = queueCreateInfo.data();
@@ -281,7 +277,8 @@ void VkRBInterface::InitVulkanSynchronizations()
 	fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 	if (vkCreateSemaphore(vkDevice, &semaphoreInfo, nullptr, &imageAvailableSemaphore) != VK_SUCCESS ||
 		vkCreateSemaphore(vkDevice, &semaphoreInfo, nullptr, &renderFinishedSemaphore) != VK_SUCCESS ||
-		vkCreateFence(vkDevice, &fenceInfo, nullptr, &inFlightFence) != VK_SUCCESS) {
+		vkCreateFence(vkDevice, &fenceInfo, nullptr, &inFlightFence) != VK_SUCCESS ||
+		vkCreateFence(vkDevice, &fenceInfo, nullptr, &nonRenderFence) != VK_SUCCESS) {
 		throw std::runtime_error("failed to create semaphores!");
 	}
 }
@@ -387,6 +384,37 @@ void VkRBInterface::WindowPresentation(uint32_t imageIndex)
 	{
 		throw std::runtime_error("Presentation has gone wrong!");
 	}
+}
+
+void VkRBInterface::UploadRenderDataToGPU(VkResourceLayout& layout)
+{
+	vkResetFences(vkDevice, 1, &nonRenderFence);
+
+	VkCommandBuffer _cmd = cmdNonRender.GetCommandBuffer();
+
+	cmdNonRender.BeginCommandBuffer();
+	
+	//-------------------------------Buffer Uploading-------------------------------
+	VkBufferCopy vertexCopy{};
+	vertexCopy.srcOffset = 0;
+	vertexCopy.dstOffset = 0;
+	vertexCopy.size = layout.GetVertexSize();
+	vkCmdCopyBuffer(_cmd, layout.GetStageBuffer(), *layout.GetVertexBufferPtr(), 1, &vertexCopy);
+
+	if (*layout.GetIndexBufferPtr() != VK_NULL_HANDLE)
+	{
+		VkBufferCopy indexCopy{};
+		indexCopy.srcOffset = layout.GetVertexSize();
+		indexCopy.dstOffset = 0;
+		indexCopy.size = layout.GetIndexSize();
+		vkCmdCopyBuffer(_cmd, layout.GetStageBuffer(), *layout.GetIndexBufferPtr(), 1, &indexCopy);
+	}
+	//-------------------------------Buffer Uploading-------------------------------
+
+	cmdNonRender.EndCommandBuffer();
+	cmdNonRender.SubmitCommandBuffer(vkQueues[0], nonRenderFence);
+
+	vkWaitForFences(vkDevice, 1, &nonRenderFence, true, 9999999999);
 }
 
 } //namespace RB

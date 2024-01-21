@@ -67,7 +67,8 @@ void MiddleRenderer::Init()
 		throw std::runtime_error("MiddleRenderer: Camera is not set up!");
 	}
 
-	CreateTestPass();
+	//CreateTestPass();
+	CreateBufferAddressPass();
 }
 
 void MiddleRenderer::CreateTestPass()
@@ -108,6 +109,50 @@ void MiddleRenderer::CreateTestPass()
 	// 把Shader编译整合进代码来
 
 	ShaderFile vert("../Rendering/Shaders/SimpleVertexShader.spv", "main", ShaderType::VS);
+	ShaderFile frag("../Rendering/Shaders/SimpleFragmentShader.spv", "main", ShaderType::FS);
+
+	// -----------------------------------------
+	// ---------- Create Pipeline
+	// -----------------------------------------
+
+	Pipeline& testPipeline = RBI->CreateGraphicsPipeline(layout, ShaderArray{ vert, frag });
+
+	// -----------------------------------------
+	// ---------- Adding pass, we're ready to go
+	// -----------------------------------------
+
+	RBI->AddPass([&testPipeline](CmdBuffer* cmd)
+		{
+			cmd->Draw(testPipeline);
+		}
+	);
+}
+
+void MiddleRenderer::CreateBufferAddressPass()
+{
+	// -----------------------------------------
+	// ---------- Start Data preperation
+	// -----------------------------------------
+	static std::vector<mat4> matrices;
+
+	// Uniform Buffer Matrices
+	matrices.push_back(mat4::Rotation(45.f, float3(0, 1, 0)) * mat4::Scale(float3(1, 1, 1)));
+	matrices.push_back(camera->viewMatrix);
+	matrices.push_back(camera->projMatrix);
+	matrices.push_back(mat4{}); //Dumpy matrix, no actual purpose, just for 256 bytes alignment
+
+	Mesh m;
+	m.CreateCube();
+
+	// -----------------------------------------
+	// ---------- Binding Rendering resources
+	// -----------------------------------------
+	RenderResourceManager resourceManager(RBI);
+	ResourceLayout* layout = resourceManager.CreateResourceLayout();
+	layout->CreateMeshData(m);
+	layout->CreateConstantBuffer("MVPMatrix", sizeof(mat4), sizeof(mat4) * 4, matrices.data());
+
+	ShaderFile vert("../Rendering/Shaders/BufferAddressVertexShader.spv", "main", ShaderType::VS);
 	ShaderFile frag("../Rendering/Shaders/SimpleFragmentShader.spv", "main", ShaderType::FS);
 
 	// -----------------------------------------

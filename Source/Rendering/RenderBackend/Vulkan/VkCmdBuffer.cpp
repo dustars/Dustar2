@@ -68,6 +68,22 @@ void VkCmdBuffer::SubmitCommandBuffer(VkQueue queue, VkSemaphore waitS, VkSemaph
 	}
 }
 
+void VkCmdBuffer::SubmitCommandBuffer(VkQueue queue, VkFence fence)
+{
+	VkPipelineStageFlags transferFlag[] = { VK_PIPELINE_STAGE_TRANSFER_BIT };
+	VkSubmitInfo submitInfo{};
+	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	submitInfo.pNext = nullptr;
+	submitInfo.pWaitDstStageMask = transferFlag;
+	submitInfo.commandBufferCount = 1;
+	submitInfo.pCommandBuffers = &cmd;
+
+	if (VK_SUCCESS != vkQueueSubmit(queue, 1, &submitInfo, fence))
+	{
+		throw std::runtime_error("Failed to submit queue");
+	}
+}
+
 void VkCmdBuffer::BeginRenderPass(const VkGraphicsPipeline& pipeline, uint32_t imageIndex)
 {
 	VkRect2D area = { {0,0}, pipeline.GetSurfaceRef().GetExtent() };
@@ -180,8 +196,10 @@ void VkCmdBuffer::Draw(Pipeline& pipeline)
 		0, nullptr);
 
 	VkDeviceSize offsets[] = { 0 };
+if constexpr (!useBufferAddressVertex)
+{
 	vkCmdBindVertexBuffers(cmd, 0, 1, p.GetVertexBufferPtr(), offsets);
-
+}
 	const VkBuffer* indexBuffer = p.GetIndexBufferPtr();
 	if (*indexBuffer != VK_NULL_HANDLE) // Draw Indexed
 	{

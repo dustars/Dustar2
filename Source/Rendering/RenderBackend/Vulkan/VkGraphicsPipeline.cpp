@@ -197,6 +197,10 @@ void VkGraphicsPipeline::CreateGraphicsPipeline()
 		);
 	}
 
+
+	VkPipelineVertexInputStateCreateInfo vertexCreateInfo{};
+	vertexCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+
 	std::vector<VkVertexInputBindingDescription> bindings;
 	bindings.emplace_back(
 		0, //Binding Index
@@ -218,14 +222,14 @@ void VkGraphicsPipeline::CreateGraphicsPipeline()
 		sizeof(float) * 4
 	);
 
-	VkPipelineVertexInputStateCreateInfo vertexCreateInfo{};
-	vertexCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-	vertexCreateInfo.pNext = nullptr;
-	vertexCreateInfo.flags = 0;
+//TODO: 作用域问题,导致上面的bindings白消耗,咋办?
+if constexpr (useBufferAddressVertex == 0)
+{
 	vertexCreateInfo.vertexBindingDescriptionCount = bindings.size();
 	vertexCreateInfo.pVertexBindingDescriptions = bindings.data();
 	vertexCreateInfo.vertexAttributeDescriptionCount = attributes.size();
 	vertexCreateInfo.pVertexAttributeDescriptions = attributes.data();
+}
 
 	VkPipelineInputAssemblyStateCreateInfo InputCreateInfo{};
 	InputCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;

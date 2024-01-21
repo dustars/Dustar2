@@ -35,6 +35,10 @@ VkResourceLayout::~VkResourceLayout()
 	vkFreeMemory(vkDevice, vertexMemory, nullptr);
 	vkFreeMemory(vkDevice, indexMemory, nullptr);
 
+	// TODO: 应该更早删掉...管他的,临时放下
+	vkDestroyBuffer(vkDevice, stageBuffer, nullptr);
+	vkFreeMemory(vkDevice, stageMemory, nullptr);
+
 	for (auto& entry : buffers) vkDestroyBuffer(vkDevice, std::get<VkBuffer>(entry.res), nullptr);
 	for (auto& entry : Images) vkDestroyImage(vkDevice, std::get<VkImage>(entry.res), nullptr);
 
@@ -42,73 +46,48 @@ VkResourceLayout::~VkResourceLayout()
 	vkFreeMemory(vkDevice, ImageMemory, nullptr);
 }
 
-void VkResourceLayout::CreateMeshData(const Mesh& m)
+template<typename T>
+void VkResourceLayout::CreateVertexBuffer(const std::vector<T>& vertexData)
 {
-	auto vertexData = m.GetVertexData();
 	vertexCount = vertexData.size();
-	uint32_t vertexByteSize = sizeof(decltype(vertexData)::value_type) * vertexCount;
+	vertexByteSize = sizeof(T) * vertexCount;
 
-	auto indexData = m.GetIndexData();
-	indexCount = indexData.size();
-	uint32_t indexByteSize = sizeof(decltype(indexData)::value_type) * indexCount;
+if constexpr (useBufferAddressVertex)
+{
+	vertexBuffer = CreateBuffer("", vertexByteSize, BufferUsage::BUFFERADDR, nullptr);
+}
+else
+{
+	vertexBuffer = CreateBuffer("", vertexByteSize, BufferUsage::VERTEX, nullptr);
+}
 
-	// Create vertex buffer
-	VkBufferCreateInfo createInfo;
-	createInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-	createInfo.pNext = nullptr;
-	createInfo.flags = 0;
-	createInfo.size = vertexByteSize;
-	createInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-	createInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-	if (VK_SUCCESS != vkCreateBuffer(vkDevice, &createInfo, nullptr, &vertexBuffer))
 	{
-		throw std::runtime_error("Failed to Vertex Buffer");
-	}
+		VkMemoryRequirements vertexMemoryRequirements;
+		vkGetBufferMemoryRequirements(vkDevice, vertexBuffer, &vertexMemoryRequirements);
+		// Find Suitable Memory Type
+		uint32_t memoryIndex = FindMemoryType(
+			vkPhysicalDevice,
+			vertexMemoryRequirements,
+			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+		);
 
-	// Create index buffer
-	if (!indexData.empty())
-	{
-		createInfo.size = indexByteSize;
-		createInfo.usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-		if (VK_SUCCESS != vkCreateBuffer(vkDevice, &createInfo, nullptr, &indexBuffer))
+		VkMemoryAllocateFlagsInfo extraInfo;
+		extraInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO;
+		extraInfo.pNext = nullptr;
+		extraInfo.flags = VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT;
+
+		// Allocate Memory
+		VkMemoryAllocateInfo allocInfo;
+		allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+		allocInfo.pNext = nullptr;
+if constexpr (useBufferAddressVertex) allocInfo.pNext = &extraInfo;
+		allocInfo.allocationSize = vertexByteSize;
+		allocInfo.memoryTypeIndex = memoryIndex;
+		if (VK_SUCCESS != vkAllocateMemory(vkDevice, &allocInfo, nullptr, &vertexMemory))
 		{
-			throw std::runtime_error("Failed to index Buffer");
+			throw std::runtime_error("Failed to vertex/index memory");
 		}
-	}
-
-	VkMemoryRequirements vertexMemoryRequirements;
-	vkGetBufferMemoryRequirements(vkDevice, vertexBuffer, &vertexMemoryRequirements);
-	// Find Suitable Memory Type
-	uint32_t memoryIndex = FindMemoryType(
-		vkPhysicalDevice,
-		vertexMemoryRequirements,
-		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
-		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
-	);
-
-	// Allocate Memory
-	VkMemoryAllocateInfo allocInfo;
-	allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-	allocInfo.pNext = nullptr;
-	allocInfo.allocationSize = vertexByteSize;
-	allocInfo.memoryTypeIndex = memoryIndex;
-
-	if (VK_SUCCESS != vkAllocateMemory(vkDevice, &allocInfo, nullptr, &vertexMemory))
-	{
-		throw std::runtime_error("Failed to vertex/index memory");
-	}
-
-	// Vertex Mapping
-	{
-		void* mappedData;
-		if (VK_SUCCESS != vkMapMemory(vkDevice, vertexMemory, 0, VK_WHOLE_SIZE, 0, &mappedData))
-		{
-			throw std::runtime_error("Failed to map vertex Memory");
-		}
-
-		std::memcpy(mappedData, vertexData.data(), vertexByteSize);
-		vkUnmapMemory(vkDevice, vertexMemory);
 
 		// Bind memory object and image object
 		if (VK_SUCCESS != vkBindBufferMemory(vkDevice, vertexBuffer, vertexMemory, 0))
@@ -117,9 +96,38 @@ void VkResourceLayout::CreateMeshData(const Mesh& m)
 		}
 	}
 
-	// Index Mapping
+if constexpr (useBufferAddressVertex)
+{
+	VkBufferDeviceAddressInfo bufferAddressCreateInfo{};
+	bufferAddressCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO;
+	bufferAddressCreateInfo.buffer = vertexBuffer;
+
+	vertexBufferAddress = vkGetBufferDeviceAddress(vkDevice, &bufferAddressCreateInfo);
+
+	CreatePushContant("VertexBufferAddress", sizeof(vertexBufferAddress), &vertexBufferAddress);
+}
+}
+
+template<typename T>
+void VkResourceLayout::CreateIndexBuffer(const std::vector<T>& indexData)
+{
+	indexCount = indexData.empty() ? 0 : indexData.size();
+	indexByteSize = indexData.empty() ? 0 : sizeof(T) * indexCount;
+
+	indexBuffer = indexData.empty() ? VK_NULL_HANDLE : CreateBuffer("", indexByteSize, BufferUsage::INDEX, nullptr);
+
 	if (!indexData.empty())
-	{ 
+	{
+		VkMemoryRequirements indexMemoryRequirements;
+		vkGetBufferMemoryRequirements(vkDevice, vertexBuffer, &indexMemoryRequirements);
+		// Find Suitable Memory Type
+		uint32_t memoryIndex = FindMemoryType(
+			vkPhysicalDevice,
+			indexMemoryRequirements,
+			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+		);
+
 		// Allocate Memory
 		VkMemoryAllocateInfo allocInfo;
 		allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
@@ -132,19 +140,64 @@ void VkResourceLayout::CreateMeshData(const Mesh& m)
 			throw std::runtime_error("Failed to vertex/index memory");
 		}
 
-		void* mappedData;
-		if (VK_SUCCESS != vkMapMemory(vkDevice, indexMemory, 0, VK_WHOLE_SIZE, 0, &mappedData))
-		{
-			throw std::runtime_error("Failed to map index memory");
-		}
-
-		std::memcpy(mappedData, indexData.data(), indexByteSize);
-		vkUnmapMemory(vkDevice, indexMemory);
-
 		// Bind memory object and image object
 		if (VK_SUCCESS != vkBindBufferMemory(vkDevice, indexBuffer, indexMemory, 0))
 		{
 			throw std::runtime_error("Failed to bind index buffer memory");
+		}
+	}
+}
+
+void VkResourceLayout::CreateMeshData(const Mesh& m)
+{
+	auto vertexData = m.GetVertexData();
+	CreateVertexBuffer(vertexData);
+
+	auto indexData = m.GetIndexData();
+	CreateIndexBuffer(indexData);
+
+	//-------------Stage Buffer/Memory Creation
+	stageBuffer = CreateBuffer("", vertexByteSize + indexByteSize, BufferUsage::STAGING, nullptr);
+
+	VkMemoryRequirements stageMemoryRequirements;
+	vkGetBufferMemoryRequirements(vkDevice, stageBuffer, &stageMemoryRequirements);
+
+	uint32_t stageMemoryIndex = FindMemoryType(
+		vkPhysicalDevice,
+		stageMemoryRequirements,
+		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
+	);
+
+	// Allocate Memory
+	VkMemoryAllocateInfo stageAllocInfo;
+	stageAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+	stageAllocInfo.pNext = nullptr;
+	stageAllocInfo.allocationSize = vertexByteSize + indexByteSize;
+	stageAllocInfo.memoryTypeIndex = stageMemoryIndex;
+
+	if (VK_SUCCESS != vkAllocateMemory(vkDevice, &stageAllocInfo, nullptr, &stageMemory))
+	{
+		throw std::runtime_error("Failed to create stage buffer");
+	}
+
+	// Stage Mapping
+	{
+		void* mappedData;
+		if (VK_SUCCESS != vkMapMemory(vkDevice, stageMemory, 0, VK_WHOLE_SIZE, 0, &mappedData))
+		{
+			throw std::runtime_error("Failed to map stage Memory");
+		}
+
+		std::memcpy(mappedData, vertexData.data(), vertexByteSize);
+		if(indexByteSize) std::memcpy((char*)mappedData + vertexByteSize, indexData.data(), indexByteSize);
+
+		vkUnmapMemory(vkDevice, stageMemory);
+
+		// Bind memory object and image object
+		if (VK_SUCCESS != vkBindBufferMemory(vkDevice, stageBuffer, stageMemory, 0))
+		{
+			throw std::runtime_error("Failed to bind stage buffer memory");
 		}
 	}
 
@@ -169,7 +222,7 @@ void VkResourceLayout::CreateConstantBuffer(const std::string& name, uint32_t st
 	if (FindResource(name)) return;
 
 	resourceInfo.emplace_back(name, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, stride, size);
-	CreateBuffer(name, size, initData);
+	CreateBuffer(name, size, BufferUsage::SRV, initData, true);
 }
 
 void* VkResourceLayout::SetPushConstant(uint32_t i, VkShaderStageFlags& stage, uint32_t& size)
@@ -374,14 +427,14 @@ void VkResourceLayout::CreateDescriptorPool(VkDevice vkDevice)
 	}
 }
 
-void VkResourceLayout::CreateBuffer(const std::string& name, uint32_t size, void* data)
+VkBuffer VkResourceLayout::CreateBuffer(const std::string& name, uint32_t size, BufferUsage usage, void* data, bool Register)
 {
 	VkBufferCreateInfo createInfo;
 	createInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
 	createInfo.pNext = nullptr;
 	createInfo.flags = 0;
 	createInfo.size = size;
-	createInfo.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+	createInfo.usage = ConvertToVulkanBufferUsage(usage);
 	createInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 	createInfo.queueFamilyIndexCount = 0; //ignored
 	createInfo.pQueueFamilyIndices = nullptr;
@@ -392,12 +445,34 @@ void VkResourceLayout::CreateBuffer(const std::string& name, uint32_t size, void
 		throw std::runtime_error("Failed to Vertex Buffer");
 	}
 
-	buffers.emplace_back( name, size, buffer, data);
+	if (Register)
+	{
+		buffers.emplace_back(name, size, buffer, data);
 
-	VkMemoryRequirements memoryRequirements;
-	vkGetBufferMemoryRequirements(vkDevice, buffer, &memoryRequirements);
+		VkMemoryRequirements memoryRequirements;
+		vkGetBufferMemoryRequirements(vkDevice, buffer, &memoryRequirements);
 
-	bufferMemoryRequirements.memoryTypeBits |= memoryRequirements.memoryTypeBits;
+		bufferMemoryRequirements.memoryTypeBits |= memoryRequirements.memoryTypeBits;
+	}
+
+	return buffer;
+}
+
+VkBufferUsageFlags VkResourceLayout::ConvertToVulkanBufferUsage(BufferUsage usage)
+{
+	switch (usage) {
+	case BufferUsage::UAV:			{return VK_BUFFER_USAGE_STORAGE_BUFFER_BIT; }
+	case BufferUsage::SRV:			{return VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT; }
+	case BufferUsage::VERTEX:		{return VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT; }
+	case BufferUsage::INDEX:		{return VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT; }
+	case BufferUsage::STAGING:		{return VK_BUFFER_USAGE_TRANSFER_SRC_BIT; }
+	case BufferUsage::BUFFERADDR:	{return VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT; }
+	default:
+	{
+		throw std::runtime_error("Invalid Buffer Usage specified!");
+	}
+	}
+	return {};
 }
 
 void VkResourceLayout::CreateImage(const std::string&)

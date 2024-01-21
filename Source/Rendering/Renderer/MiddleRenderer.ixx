@@ -32,4 +32,5 @@ private:
     std::shared_ptr<CameraRenderData> camera;
 
     void CreateTestPass();
+    void CreateBufferAddressPass();
 };
