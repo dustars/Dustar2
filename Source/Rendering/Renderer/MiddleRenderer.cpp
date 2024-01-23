@@ -67,8 +67,8 @@ void MiddleRenderer::Init()
 		throw std::runtime_error("MiddleRenderer: Camera is not set up!");
 	}
 
-	//CreateTestPass();
-	CreateBufferAddressPass();
+	CreateTestPass();
+	//CreateBufferAddressPass();
 }
 
 void MiddleRenderer::CreateTestPass()
@@ -100,6 +100,7 @@ void MiddleRenderer::CreateTestPass()
 	ResourceLayout* layout = resourceManager.CreateResourceLayout();
 	layout->CreateMeshData(m);
 	layout->CreatePushContant("mvp", sizeof(mat4), camera->viewMatrix.values);
+	layout->CreateSRV("Worley", "C:/Users/auty7/source/repos/Dustar2/Resources/Textures/worley.jpg");
 	//layout->CreatePushContant("mvp", sizeof(mat4), &projGLM);
 	layout->CreateConstantBuffer("MVPMatrix", sizeof(mat4), sizeof(mat4) * 4, matrices.data());
 	//layout->CreateConstantBuffer("testMatrix", sizeof(mat4), sizeof(mat4), modelMatrix.values);

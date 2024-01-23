@@ -30,7 +30,8 @@ public:
 
         // Config features :<
         physicalDevicefeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-        physicalDevicefeatures.features.shaderInt64 = VK_TRUE;
+        physicalDevicefeatures.features.shaderInt64         = VK_TRUE;
+        physicalDevicefeatures.features.samplerAnisotropy   = VK_TRUE;
 
         dynamicRenderingFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES;
         dynamicRenderingFeatures.dynamicRendering = VK_TRUE;

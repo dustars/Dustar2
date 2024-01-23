@@ -73,7 +73,7 @@ private:
 		std::string name;
 		uint32_t size;
 		std::variant<VkBuffer, VkImage> res;
-		void* data;
+		void* data; //Nullptr means no need to do memory mapping
 		resEntry(std::string name, uint32_t size, std::variant<VkBuffer, VkImage> res, void* data)
 			: name(name), size(size), res(res), data(data) {}
 	};
@@ -102,8 +102,17 @@ private:
 
     VkBuffer stageBuffer;
     VkDeviceMemory stageMemory;
-
     VkDeviceAddress vertexBufferAddress;
+
+    //Image Data
+    VkImage testImage;
+    VkImageView testImageView;
+    VkSampler testImageSampler;
+    VkDeviceMemory testImageMemory;
+    VkImage depthImage;
+    VkBuffer stageBufferForImage;
+    VkDeviceMemory stageMemoryForImage;
+
 public:
     VkResourceLayout(VkDevice device, VkPhysicalDevice pDev) : vkDevice(device) , vkPhysicalDevice(pDev) {}
     virtual ~VkResourceLayout();
@@ -111,10 +120,13 @@ public:
     virtual void CreateMeshData(const Mesh&) final override;
     virtual void CreatePushContant(const std::string&, uint32_t, void* = nullptr) final override;
     virtual void CreateConstantBuffer(const std::string&, uint32_t, uint32_t, void* = nullptr) final override;
+    virtual void CreateSRV(const std::string&, const char*) final override;
 
 	VkPipelineLayout GetPipelineLayout() { return pipelineLayout; }
 	const VkDescriptorSet* GetDescriptorSet() { return &set; }
 
+
+    //TODO: Get/Set rework
     uint32_t GetPushConstantsSize() { return pushConstants.size(); }
     void*    SetPushConstant(uint32_t, VkShaderStageFlags&, uint32_t&);
 	const VkBuffer* GetVertexBufferPtr() { return &vertexBuffer; }
@@ -124,6 +136,13 @@ public:
 	uint32_t GetVertexSize() { return vertexByteSize; }
 	uint32_t GetIndexCount() { return indexCount; }
 	uint32_t GetIndexSize() { return indexByteSize; }
+
+    //TODO: Temp
+    uint32_t testImageWidth;
+    uint32_t testImageHeight;
+    VkImage GetTestImage() { return testImage; }
+    VkBuffer GetStageBufferForImage() { return stageBufferForImage; }
+
 private:
     // Called when creating Graphics Pipeline
 	VkPipelineLayout BuildPipelineLayout();
@@ -157,14 +176,18 @@ private:
     // 暂时把Buffer/Image相关放在这里
     static VkMemoryRequirements bufferMemoryRequirements;
 	static VkDeviceMemory bufferMemory;
-    static VkMemoryRequirements imageMemoryRequirements;
+    static VkMemoryRequirements imageSRVMemoryRequirements;
 	static VkDeviceMemory ImageMemory;
 
     static std::vector<resEntry> buffers;
     static std::vector<resEntry> Images;
     VkBuffer CreateBuffer(const std::string&, uint32_t, BufferUsage, void*, bool = false);
     VkBufferUsageFlags ConvertToVulkanBufferUsage(BufferUsage);
-	void CreateImage(const std::string&);
+    //VkImage CreateImage(const std::string&, uint32_t, uint32_t, VkFormat, VkImageUsageFlags, bool);
+    void CreateTestImage(const std::string&, const char*);
+    VkImage CreateTestImage(const std::string&, uint32_t, uint32_t, VkFormat, VkImageUsageFlags, bool);
+    VkImageView CreateTestImageView(VkImage image, VkFormat format);
+    VkSampler CreateTestImageSampler();
 
     static void CreateResources(VkDevice, VkPhysicalDevice);
     // Called by CreateResources()

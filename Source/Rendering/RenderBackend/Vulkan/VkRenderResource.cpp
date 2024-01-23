@@ -6,9 +6,13 @@
     5/16/2022 10:47:46 PM
 */
 
+module;
+#define STB_IMAGE_IMPLEMENTATION
+#include "Utilities/stb/stb_image.h"
 module VkRenderResource;
 
 import <vulkan/vulkan.h>;
+
 
 namespace RB
 {
@@ -18,7 +22,7 @@ VkDescriptorPool VkResourceLayout::descriptorPool;
 std::vector<VkResourceLayout::ResourceInfo> VkResourceLayout::resourceInfo;
 VkMemoryRequirements VkResourceLayout::bufferMemoryRequirements;
 VkDeviceMemory VkResourceLayout::bufferMemory;
-VkMemoryRequirements VkResourceLayout::imageMemoryRequirements;
+VkMemoryRequirements VkResourceLayout::imageSRVMemoryRequirements;
 VkDeviceMemory VkResourceLayout::ImageMemory;
 std::vector<VkResourceLayout::resEntry> VkResourceLayout::buffers;
 std::vector<VkResourceLayout::resEntry> VkResourceLayout::Images;
@@ -38,6 +42,10 @@ VkResourceLayout::~VkResourceLayout()
 	// TODO: 应该更早删掉...管他的,临时放下
 	vkDestroyBuffer(vkDevice, stageBuffer, nullptr);
 	vkFreeMemory(vkDevice, stageMemory, nullptr);
+	vkDestroyBuffer(vkDevice, stageBufferForImage, nullptr);
+	vkFreeMemory(vkDevice, stageMemoryForImage, nullptr);
+	vkDestroySampler(vkDevice, testImageSampler, nullptr);
+	vkDestroyImageView(vkDevice, testImageView, nullptr);
 
 	for (auto& entry : buffers) vkDestroyBuffer(vkDevice, std::get<VkBuffer>(entry.res), nullptr);
 	for (auto& entry : Images) vkDestroyImage(vkDevice, std::get<VkImage>(entry.res), nullptr);
@@ -225,6 +233,20 @@ void VkResourceLayout::CreateConstantBuffer(const std::string& name, uint32_t st
 	CreateBuffer(name, size, BufferUsage::SRV, initData, true);
 }
 
+void VkResourceLayout::CreateSRV(const std::string& name, const char* filePath)
+{
+	resourceNames.push_back(name);
+	poolMembers[VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER]++;
+
+	// 一个Resouce对应一个ResourceInfo
+	if (FindResource(name)) return;
+
+	// TODO: 写死的!写死的!
+	CreateTestImage(name, filePath);
+
+	resourceInfo.emplace_back(name, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0, testImageWidth * testImageHeight * 4);
+}
+
 void* VkResourceLayout::SetPushConstant(uint32_t i, VkShaderStageFlags& stage, uint32_t& size)
 {
 	if (auto res = FindResource(pushConstants[i].name))
@@ -272,8 +294,19 @@ void VkResourceLayout::BindResourcesAndDescriptors()
 				bufferInfo.buffer = std::get<VkBuffer>(b.res);
 				bufferInfo.offset = 0;
 				bufferInfo.range = b.size;
+				writeDescriptor.pBufferInfo = &bufferInfo;
 			}
-			writeDescriptor.pBufferInfo = &bufferInfo;
+
+			VkDescriptorImageInfo imageInfo;
+			for (auto& i : Images) if (res->name == i.name)
+			{
+				//TODO: 写死写死....
+				imageInfo.sampler		= CreateTestImageSampler();
+				imageInfo.imageView		= CreateTestImageView(std::get<VkImage>(i.res), VK_FORMAT_R8G8B8A8_SRGB);
+				imageInfo.imageLayout	= VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+				writeDescriptor.pImageInfo = &imageInfo;
+			}
+			
 			writeDescriptors.push_back(std::move(writeDescriptor));
 		}
 	}
@@ -416,7 +449,7 @@ void VkResourceLayout::CreateDescriptorPool(VkDevice vkDevice)
 	createInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
 	createInfo.pNext = nullptr;
 	createInfo.flags = 0;
-	createInfo.maxSets = 10u;
+	createInfo.maxSets = 10u; // TODO: Hardcoded size
 	// Only specified descriptor type may be allocated from the pool
 	createInfo.poolSizeCount = poolContent.size();
 	createInfo.pPoolSizes = poolContent.data();
@@ -475,9 +508,151 @@ VkBufferUsageFlags VkResourceLayout::ConvertToVulkanBufferUsage(BufferUsage usag
 	return {};
 }
 
-void VkResourceLayout::CreateImage(const std::string&)
+void VkResourceLayout::CreateTestImage(const std::string& name, const char* filePath)
 {
+	// Load image source data
+	int texWidth, texHeight, texChannels;
+	stbi_uc* pixels = stbi_load(filePath, &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+	uint32_t imageSize = texWidth * texHeight * 4;
 
+	testImageWidth = texWidth;
+	testImageHeight = texHeight;
+
+	if (!pixels) {
+		throw std::runtime_error("failed to load texture image!");
+	}
+
+	//-------------Stage Buffer/Memory Creation
+	stageBufferForImage = CreateBuffer("", imageSize, BufferUsage::STAGING, nullptr);
+
+	VkMemoryRequirements stageMemoryRequirements;
+	vkGetBufferMemoryRequirements(vkDevice, stageBuffer, &stageMemoryRequirements);
+
+	uint32_t stageMemoryIndex = FindMemoryType(
+		vkPhysicalDevice,
+		stageMemoryRequirements,
+		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
+	);
+
+	// Allocate Memory
+	VkMemoryAllocateInfo stageAllocInfo;
+	stageAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+	stageAllocInfo.pNext = nullptr;
+	stageAllocInfo.allocationSize = imageSize;
+	stageAllocInfo.memoryTypeIndex = stageMemoryIndex;
+
+	if (VK_SUCCESS != vkAllocateMemory(vkDevice, &stageAllocInfo, nullptr, &stageMemoryForImage))
+	{
+		throw std::runtime_error("Failed to create stage buffer");
+	}
+
+	// Stage Mapping
+	{
+		void* mappedData;
+		if (VK_SUCCESS != vkMapMemory(vkDevice, stageMemoryForImage, 0, VK_WHOLE_SIZE, 0, &mappedData))
+		{
+			throw std::runtime_error("Failed to map stage Memory");
+		}
+
+		std::memcpy(mappedData, pixels, imageSize);
+
+		vkUnmapMemory(vkDevice, stageMemoryForImage);
+
+		// Bind memory object and image object
+		if (VK_SUCCESS != vkBindBufferMemory(vkDevice, stageBufferForImage, stageMemoryForImage, 0))
+		{
+			throw std::runtime_error("Failed to bind stage buffer memory");
+		}
+	}
+
+	stbi_image_free(pixels);
+
+	testImage = CreateTestImage(name, texWidth, texHeight, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, true);
+
+	{	//Register
+		Images.emplace_back(name, imageSize, testImage, nullptr);
+
+		VkMemoryRequirements memoryRequirements;
+		vkGetImageMemoryRequirements(vkDevice, testImage, &memoryRequirements);
+
+		imageSRVMemoryRequirements.memoryTypeBits |= memoryRequirements.memoryTypeBits;
+	}
+}
+
+VkImage VkResourceLayout::CreateTestImage(const std::string& name, uint32_t width, uint32_t height, VkFormat format, VkImageUsageFlags usage, bool SRV)
+{
+	VkImageCreateInfo imageCreateInfo{};
+	imageCreateInfo.sType						= VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+	imageCreateInfo.pNext						= nullptr;
+	imageCreateInfo.flags						= 0;
+	imageCreateInfo.imageType					= VK_IMAGE_TYPE_2D;
+	imageCreateInfo.format						= format;
+	imageCreateInfo.extent						= { width , height, 1 };
+	imageCreateInfo.mipLevels					= 1;
+	imageCreateInfo.arrayLayers					= 1;
+	imageCreateInfo.samples						= VK_SAMPLE_COUNT_1_BIT;
+	imageCreateInfo.tiling						= SRV ? VK_IMAGE_TILING_OPTIMAL : VK_IMAGE_TILING_LINEAR; //SRV, UAV uses VK_IMAGE_TILING_LINEAR
+	imageCreateInfo.usage						= usage;
+	imageCreateInfo.sharingMode					= VK_SHARING_MODE_EXCLUSIVE;
+	imageCreateInfo.queueFamilyIndexCount		= 0;		//Ignored
+	imageCreateInfo.pQueueFamilyIndices			= nullptr;	//Ignored
+	imageCreateInfo.initialLayout				= VK_IMAGE_LAYOUT_UNDEFINED;
+
+	VkImage image;
+	if (vkCreateImage(vkDevice, &imageCreateInfo, nullptr, &image) != VK_SUCCESS) {
+		throw std::runtime_error("failed to create image!");
+	}
+	
+	return image;
+}
+
+VkImageView VkResourceLayout::CreateTestImageView(VkImage image, VkFormat format)
+{
+	VkImageViewCreateInfo viewInfo{};
+	viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+	viewInfo.image = image;
+	viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+	viewInfo.format = format;
+	viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	viewInfo.subresourceRange.baseMipLevel = 0;
+	viewInfo.subresourceRange.levelCount = 1;
+	viewInfo.subresourceRange.baseArrayLayer = 0;
+	viewInfo.subresourceRange.layerCount = 1;
+
+	VkImageView imageView;
+	if (vkCreateImageView(vkDevice, &viewInfo, nullptr, &imageView) != VK_SUCCESS) {
+		throw std::runtime_error("failed to create texture image view!");
+	}
+
+	return imageView;
+}
+
+VkSampler VkResourceLayout::CreateTestImageSampler()
+{
+	VkSamplerCreateInfo samplerInfo{};
+	samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+	samplerInfo.magFilter = VK_FILTER_LINEAR;
+	samplerInfo.minFilter = VK_FILTER_LINEAR;
+	samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+	samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+	samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+	samplerInfo.anisotropyEnable = VK_TRUE;
+	samplerInfo.maxAnisotropy = 8; // TODO:不要写死, 我的6900XT是16
+	samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+	samplerInfo.unnormalizedCoordinates = VK_FALSE;
+	samplerInfo.compareEnable = VK_FALSE;
+	samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
+	samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+	samplerInfo.mipLodBias = 0.0f;
+	samplerInfo.minLod = 0.0f;
+	samplerInfo.maxLod = 0.0f;
+
+	VkSampler sampler;
+	if (vkCreateSampler(vkDevice, &samplerInfo, nullptr, &sampler) != VK_SUCCESS) {
+		throw std::runtime_error("failed to create texture sampler!");
+	}
+	return sampler;
 }
 
 void VkResourceLayout::CreateResources(VkDevice vkDevice, VkPhysicalDevice vkPhysicalDevice)
@@ -515,9 +690,27 @@ void VkResourceLayout::CreateMemory(VkDevice vkDevice, VkPhysicalDevice vkPhysic
 		}
 	}
 
-	// Image Memory Creation
+	// SRV Image Memory Creation
 	{
+		uint32_t memoryIndex = FindMemoryType(
+			vkPhysicalDevice,
+			imageSRVMemoryRequirements,
+			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+		);
 
+		uint32_t totalSize = 0;
+		for (auto& entry : Images) totalSize += entry.size;
+
+		VkMemoryAllocateInfo allocInfo{};
+		allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+		allocInfo.pNext = nullptr;
+		allocInfo.allocationSize = totalSize;
+		allocInfo.memoryTypeIndex = memoryIndex;
+
+		if (VK_SUCCESS != vkAllocateMemory(vkDevice, &allocInfo, nullptr, &ImageMemory)) {
+			throw std::runtime_error("Failed to create image memory!");
+		}
 	}
 }
 
@@ -527,6 +720,7 @@ void VkResourceLayout::BindBuffersAndMemory(VkDevice vkDevice)
 	for (auto& entry : buffers)
 	{
 		// 如果提供了初始数据, 就要初始化一下Buffer
+		// TODO: 这是通过CPU与GPU直接Mapping, 不是Staging Buffer, 效率其实不理想, 要改
 		if (entry.data)
 		{
 			void* mappedData;
@@ -550,7 +744,17 @@ void VkResourceLayout::BindBuffersAndMemory(VkDevice vkDevice)
 
 void VkResourceLayout::BindImagesAndMemory(VkDevice vkDevice)
 {
-
+	uint32_t offset = 0;
+	for (auto& entry : Images)
+	{
+		// TODO: Image暂时不支持直接Copy Paste数据
+		// Bind memory object and image object
+		if (VK_SUCCESS != vkBindImageMemory(vkDevice, std::get<VkImage>(entry.res), ImageMemory, offset))
+		{
+			throw std::runtime_error("Failed to bind buffer and memory");
+		}
+		offset += entry.size;
+	}
 }
 
 }

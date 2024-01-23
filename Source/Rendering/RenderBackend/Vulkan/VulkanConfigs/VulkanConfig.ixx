@@ -10,4 +10,4 @@
 export module VulkanConfig;
 
 export constexpr int useRenderPass = 0;
-export constexpr int useBufferAddressVertex = 1;
+export constexpr int useBufferAddressVertex = 0;

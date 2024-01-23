@@ -392,6 +392,7 @@ void VkRBInterface::UploadRenderDataToGPU(VkResourceLayout& layout)
 
 	VkCommandBuffer _cmd = cmdNonRender.GetCommandBuffer();
 
+	//TODO: VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT
 	cmdNonRender.BeginCommandBuffer();
 	
 	//-------------------------------Buffer Uploading-------------------------------
@@ -411,10 +412,45 @@ void VkRBInterface::UploadRenderDataToGPU(VkResourceLayout& layout)
 	}
 	//-------------------------------Buffer Uploading-------------------------------
 
+	//-------------------------------Texture Uploading-------------------------------
+	cmdNonRender.ImageTransition(layout.GetTestImage(), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+
+	VkBufferImageCopy region{};
+	region.bufferOffset = 0;
+	region.bufferRowLength = 0;
+	region.bufferImageHeight = 0;
+
+	region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	region.imageSubresource.mipLevel = 0;
+	region.imageSubresource.baseArrayLayer = 0;
+	region.imageSubresource.layerCount = 1;
+
+	region.imageOffset = { 0, 0, 0 };
+	region.imageExtent = {
+		layout.testImageWidth,
+		layout.testImageHeight,
+		1
+	};
+
+	vkCmdCopyBufferToImage(
+		_cmd,
+		layout.GetStageBufferForImage(),
+		layout.GetTestImage(),
+		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+		1,
+		&region
+	);
+
+	cmdNonRender.ImageTransition(layout.GetTestImage(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+	//-------------------------------Texture Uploading-------------------------------
+
 	cmdNonRender.EndCommandBuffer();
 	cmdNonRender.SubmitCommandBuffer(vkQueues[0], nonRenderFence);
 
 	vkWaitForFences(vkDevice, 1, &nonRenderFence, true, 9999999999);
+
+	vkQueueWaitIdle(vkQueues[0]);
 }
 
 } //namespace RB

@@ -40,8 +40,7 @@ public:
     virtual void CreateMeshData(const Mesh&) = 0;
 	virtual void CreatePushContant(const std::string&, uint32_t size, void* initData = nullptr) = 0;
 	virtual void CreateConstantBuffer(const std::string&, uint32_t stride, uint32_t size, void* initData = nullptr) = 0;
-	//virtual void CreateVertexBuffer(const std::string&, uint32_t stride, uint32_t size, void* initData = nullptr);
-	//virtual void CreateSRV(const std::string&, uint32_t stride, uint32_t size, void* initData = nullptr);
+	virtual void CreateSRV(const std::string&, const char*) = 0;
 	//virtual void CreateUAV(const std::string&, uint32_t stride, uint32_t size, void* initData = nullptr);
 	//virtual void CreateConstant(const std::string&, uint32_t size, void* initData = nullptr);
 };

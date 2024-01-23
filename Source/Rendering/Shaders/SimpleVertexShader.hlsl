@@ -21,7 +21,7 @@ struct PushConstants
 
 [[vk::push_constant]] PushConstants cb;
 
-[[vk::binding(0)]]
+[[vk::binding(1)]]
 ConstantBuffer<MVPMatrix> mvpMatrices;
 
 //[[vk::binding(1)]]
