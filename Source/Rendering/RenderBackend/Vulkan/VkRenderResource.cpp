@@ -301,8 +301,8 @@ void VkResourceLayout::BindResourcesAndDescriptors()
 			for (auto& i : Images) if (res->name == i.name)
 			{
 				//TODO: 写死写死....
-				imageInfo.sampler		= CreateTestImageSampler();
-				imageInfo.imageView		= CreateTestImageView(std::get<VkImage>(i.res), VK_FORMAT_R8G8B8A8_SRGB);
+				imageInfo.sampler		= testImageSampler = CreateTestImageSampler();
+				imageInfo.imageView		= testImageView = CreateTestImageView(std::get<VkImage>(i.res), VK_FORMAT_R8G8B8A8_SRGB);
 				imageInfo.imageLayout	= VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 				writeDescriptor.pImageInfo = &imageInfo;
 			}
