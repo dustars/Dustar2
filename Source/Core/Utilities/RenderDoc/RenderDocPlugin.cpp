@@ -29,10 +29,17 @@ bool RenderDocPlugin::HookRenderDoc(void* deviceIn, void* wndHandleIn)
 		return false;
 	}
 
-	if (HMODULE mod = GetModuleHandleA("renderdoc.dll"))
-		//std::string renderDocExe = "\\qrenderdoc.exe"; // Delete the exe file from the search directory
-		//std::string searchPath = std::string(renderDocPath.cbegin(), renderDocPath.cend() - renderDocExe.size()) + "\\renderdoc.dll"; // Convert wstring to string
-		//if (HMODULE mod = LoadLibraryA(searchPath.data()))
+
+	HMODULE mod = GetModuleHandleA("renderdoc.dll");
+	// If renderdoc.dll is not loaded, try to manually do so.
+	if (!mod)
+	{
+		std::string renderDocExe = "\\qrenderdoc.exe"; // Delete the exe file from the search directory
+		std::string searchPath = std::string(renderDocPath.cbegin(), renderDocPath.cend() - renderDocExe.size()) + "\\renderdoc.dll"; // Convert wstring to string
+		HMODULE mod = LoadLibraryA(searchPath.data());
+	}
+
+	if (mod)
 	{
 		pRENDERDOC_GetAPI RENDERDOC_GetAPI =
 			(pRENDERDOC_GetAPI)GetProcAddress(mod, "RENDERDOC_GetAPI");
@@ -42,7 +49,7 @@ bool RenderDocPlugin::HookRenderDoc(void* deviceIn, void* wndHandleIn)
 
 	if (!rdoc_api)
 	{
-		throw std::runtime_error("Didn't find renderdoc module");
+		throw std::runtime_error("Unable to load renderdoc.dll");
 	}
 	else
 	{
