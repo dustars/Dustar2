@@ -288,7 +288,7 @@ void VkRBInterface::EnableInstanceLayers(std::vector<const char*>& enabledInstan
 	//TODO: 后期会需要一个机制在创建APP前确定需要哪些layers & extensions
 #ifndef NDEBUG
 	enabledInstanceLayers.push_back("VK_LAYER_KHRONOS_validation");
-	enabledInstanceLayers.push_back("VK_LAYER_RENDERDOC_Capture");
+	//enabledInstanceLayers.push_back("VK_LAYER_RENDERDOC_Capture");
 #endif
 
 	uint32_t layerCount;
