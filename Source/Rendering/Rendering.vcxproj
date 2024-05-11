@@ -61,7 +61,7 @@
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <EnableModules>false</EnableModules>
-      <AdditionalIncludeDirectories>C:\VulkanSDK\1.3.280.0\Include;$(SolutionDir)Core;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\VulkanSDK\Include;$(SolutionDir)Core;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ScanSourceForModuleDependencies>false</ScanSourceForModuleDependencies>
       <AdditionalBMIDirectories>
       </AdditionalBMIDirectories>

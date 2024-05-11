@@ -58,9 +58,8 @@ bool VkRBInterface::Render()
 	//Draw Graphics Pipeline
 	for (uint32_t i = 0; i < testGraphicsPipeline.size(); i++)
 	{
-		// why infinite waiting on certain pcs?
-		//auto result = vkWaitForFences(vkDevice, 1, &inFlightFence, VK_TRUE, UINT64_MAX); // 10s
-		//vkResetFences(vkDevice, 1, &inFlightFence);
+		vkWaitForFences(vkDevice, 1, &inFlightFence, VK_TRUE, UINT64_MAX);
+		vkResetFences(vkDevice, 1, &inFlightFence);
 
 		uint32_t imageIndex = surface.GetAvailableImageIndex(UINT64_MAX, imageAvailableSemaphore);
 
@@ -83,14 +82,11 @@ else
 		cmd.SubmitCommandBuffer(vkQueues[0], imageAvailableSemaphore, renderFinishedSemaphore);
 
 		WindowPresentation(imageIndex);
-		
-		// vkQueueWaitIdle is equivalent to having submitted a valid fence to every previously executed queue submission command that accepts a fence, 
-		// then waiting for all of those fences to signal using vkWaitForFences with an infinite timeout and waitAll set to VK_TRUE.
+		// 相当重要……
 		vkQueueWaitIdle(vkQueues[0]);
 	}
 
-	// vkDeviceWaitIdle is equivalent to calling vkQueueWaitIdle for all queues owned by device.
-	//vkDeviceWaitIdle(vkDevice);
+	vkDeviceWaitIdle(vkDevice);
 	return true;
 }
 

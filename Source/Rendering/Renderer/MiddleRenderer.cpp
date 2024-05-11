@@ -100,7 +100,7 @@ void MiddleRenderer::CreateTestPass()
 	ResourceLayout* layout = resourceManager.CreateResourceLayout();
 	layout->CreateMeshData(m);
 	layout->CreatePushContant("mvp", sizeof(mat4), camera->viewMatrix.values);
-	layout->CreateSRV("Worley", "E:/Github/Dustar2/Resources/Textures/worley.jpg");
+	layout->CreateSRV("Worley", "C:/Users/auty7/source/repos/Dustar2/Resources/Textures/worley.jpg");
 	//layout->CreatePushContant("mvp", sizeof(mat4), &projGLM);
 	layout->CreateConstantBuffer("MVPMatrix", sizeof(mat4), sizeof(mat4) * 4, matrices.data());
 	//layout->CreateConstantBuffer("testMatrix", sizeof(mat4), sizeof(mat4), modelMatrix.values);
