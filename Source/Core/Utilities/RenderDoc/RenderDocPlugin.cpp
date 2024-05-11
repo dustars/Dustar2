@@ -36,7 +36,7 @@ bool RenderDocPlugin::HookRenderDoc(void* deviceIn, void* wndHandleIn)
 	{
 		std::string renderDocExe = "\\qrenderdoc.exe"; // Delete the exe file from the search directory
 		std::string searchPath = std::string(renderDocPath.cbegin(), renderDocPath.cend() - renderDocExe.size()) + "\\renderdoc.dll"; // Convert wstring to string
-		HMODULE mod = LoadLibraryA(searchPath.data());
+		mod = LoadLibraryA(searchPath.data());
 	}
 
 	if (mod)
