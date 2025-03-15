@@ -9,6 +9,7 @@
 module;
 #define WINDOW_APP
 #define VK_USE_PLATFORM_WIN32_KHR
+#define VK_DEBUG_UTILS
 module VkRenderingBackend;
 
 import VulkanConfig;
@@ -59,8 +60,8 @@ bool VkRBInterface::Render()
 	for (uint32_t i = 0; i < testGraphicsPipeline.size(); i++)
 	{
 		// why infinite waiting on certain pcs?
-		//auto result = vkWaitForFences(vkDevice, 1, &inFlightFence, VK_TRUE, UINT64_MAX); // 10s
-		//vkResetFences(vkDevice, 1, &inFlightFence);
+		auto result = vkWaitForFences(vkDevice, 1, &inFlightFence, VK_TRUE, UINT64_MAX); // 10s
+		vkResetFences(vkDevice, 1, &inFlightFence);
 
 		uint32_t imageIndex = surface.GetAvailableImageIndex(UINT64_MAX, imageAvailableSemaphore);
 
@@ -90,7 +91,7 @@ else
 	}
 
 	// vkDeviceWaitIdle is equivalent to calling vkQueueWaitIdle for all queues owned by device.
-	//vkDeviceWaitIdle(vkDevice);
+	vkDeviceWaitIdle(vkDevice);
 	return true;
 }
 
@@ -120,7 +121,9 @@ void VkRBInterface::InitResources(const std::vector<ResourceLayout*>& layouts)
 	{
 		dynamic_cast<VkResourceLayout*>(layout)->AllocateDescriptorSet();
 		dynamic_cast<VkResourceLayout*>(layout)->BindResourcesAndDescriptors();
-		//TODO:我是不知道为什么放这里...暂时吧
+		//TODO: 都是CmdBuffer的操作，后续各种API会写到CmdBuffer里，再由RBI统一调用
+		//TODO: Extra Care for Sync
+		//TODO: Update分为一次性和持续的（如Camera），需要区分两种Update吗？
 		UploadRenderDataToGPU(*dynamic_cast<VkResourceLayout*>(layout));
 	}
 }
@@ -292,7 +295,6 @@ void VkRBInterface::EnableInstanceLayers(std::vector<const char*>& enabledInstan
 	//TODO: 后期会需要一个机制在创建APP前确定需要哪些layers & extensions
 #ifndef NDEBUG
 	enabledInstanceLayers.push_back("VK_LAYER_KHRONOS_validation");
-	//enabledInstanceLayers.push_back("VK_LAYER_RENDERDOC_Capture");
 #endif
 
 	uint32_t layerCount;
@@ -319,6 +321,10 @@ void VkRBInterface::EnableInstanceExtensions(std::vector<const char*>& enabledIn
 	enabledInstanceExtension.push_back("VK_KHR_win32_surface");
 #endif
 
+#endif
+
+#ifdef VK_DEBUG_UTILS
+	enabledInstanceExtension.push_back("VK_EXT_debug_utils");
 #endif
 
 	uint32_t extensionCount;

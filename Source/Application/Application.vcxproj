@@ -68,7 +68,7 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:\VulkanSDK\Lib</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:\VulkanSDK\Lib;</AdditionalLibraryDirectories>
       <EntryPointSymbol>
       </EntryPointSymbol>
       <AdditionalDependencies>vulkan-1.lib;%(AdditionalDependencies)</AdditionalDependencies>
